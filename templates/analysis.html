@@ -1,0 +1,158 @@
+{% extends "layout.html" %}
+
+{% block main %}
+
+    <main class="relative overflow-hidden bg-gradient-to-b from-gray-100 to-white pt-4">
+        <div class="bg-white flex flex-col items-center w-full px-4 sm:px-6 lg:px-8 pb-6 pt-20">
+            <div class="w-16 h-16 rounded-xl gradient-purple flex items-center justify-center mb-4">
+                <svg fill="#ffffff" height="200px" width="200px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg"
+                xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-206.89 -206.89 873.53 873.53" xml:space="preserve" stroke="#ffffff">
+                <g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                <g id="SVGRepo_iconCarrier"> <g> <path d="M447.652,304.13h-40.138c-6.681,0-12.097,5.416-12.097,12.097v95.805c0,6.681,5.416,12.098,12.097,12.098h40.138 c6.681,0,12.098-5.416,12.098-12.098v-95.805C459.75,309.546,454.334,304.13,447.652,304.13z"></path> 
+                    <path d="M348.798,258.13H308.66c-6.681,0-12.098,5.416-12.098,12.097v141.805c0,6.681,5.416,12.098,12.098,12.098h40.138 c6.681,0,12.097-5.416,12.097-12.098V270.228C360.896,263.546,355.48,258.13,348.798,258.13z"></path>
+                    <path d="M151.09,304.13h-40.138c-6.681,0-12.097,5.416-12.097,12.097v95.805c0,6.681,5.416,12.098,12.097,12.098h40.138 c6.681,0,12.098-5.416,12.098-12.098v-95.805C163.188,309.546,157.771,304.13,151.09,304.13z"></path> 
+                    <path d="M52.236,258.13H12.098C5.416,258.13,0,263.546,0,270.228v141.805c0,6.681,5.416,12.098,12.098,12.098h40.138 c6.681,0,12.097-5.416,12.097-12.098V270.228C64.333,263.546,58.917,258.13,52.236,258.13z"></path> 
+                    <path d="M249.944,196.968h-40.138c-6.681,0-12.098,5.416-12.098,12.098v202.967c0,6.681,5.416,12.098,12.098,12.098h40.138 c6.681,0,12.098-5.416,12.098-12.098V209.066C262.042,202.384,256.625,196.968,249.944,196.968z"></path> 
+                    <path d="M436.869,244.62c8.14,0,15-6.633,15-15v-48.479c0-8.284-6.716-15-15-15c-8.284,0-15,6.716-15,15v12.119L269.52,40.044 c-3.148-3.165-7.536-4.767-11.989-4.362c-4.446,0.403-8.482,2.765-11.011,6.445L131.745,209.185L30.942,144.969 c-6.987-4.451-16.26-2.396-20.71,4.592c-4.451,6.987-2.396,16.259,4.592,20.71l113.021,72c2.495,1.589,5.286,2.351,8.046,2.351 c4.783,0,9.475-2.285,12.376-6.507L261.003,74.025L400.8,214.62h-12.41c-8.284,0-15,6.716-15,15c0,8.284,6.716,15,15,15 c6.71,0,41.649,0,48.443,0H436.869z"></path> </g> </g></svg>
+            </div>
+            <h2 class="text-3xl font-bold text-center tech-dark-purple mb-12">Dataset Analysis</h2>
+            <p class="text-l md:text-l text-gray-600 max-w-3xl mx-auto mb-8 animate-fade-in" style="animation-delay: 0.2s;">
+                Welcome to the analysis section. This tool allows you to quickly explore the structure and distribution of your data through descriptive statistics and visualizations.
+                To begin, upload a CSV file using the form below. The system will calculate summary statistics (mean, median, standard deviation, etc.) for each column and display correlation heatmaps and other visual insights.
+                Ensure your dataset is clean and in tabular format, with headers in the first row. Once uploaded, the results will appear below. <br/> At the moment, we don't support time series analysis! This feature will be soon added.
+            </p>
+        </div>
+        <form class='flex flex-col align-center mx-auto mb-6 max-w-xs gap-4' method="POST" enctype="multipart/form-data">
+            <input type="file" name="dataset" required>
+            <button type="submit" class="bg-purple-500 hover:bg-purple-600 text-white px-8 py-2 rounded-md font-medium">Analyze</button>
+        </form>
+    </main>
+    <div class="flex justify-center my-6">
+        <div class="loader hidden" id="analysis-spinner"></div>
+    </div>
+    
+    {% if error %}
+            <p style="color:red">{{ error }}</p>
+    {% endif %}
+
+    {% if results %}
+        {% if 'numerical' in results %}
+            <section class="my-6 flex flex-col items-center">
+                <h3 class="text-2xl font-bold text-center my-4">Numerical Features</h3>
+                <div>
+                    <h4 class="text-xl font-bold text-center my-4">Stats</h4>
+                    <table class='shadow-md rounded-xl bg-clip-border'>
+                        <thead>
+                            <tr>
+                                <th class="p-4 border-b border-gray-100 bg-gray-200">column</th>
+                                {% set first_col = results.numerical[0] | first %}
+                                {% for stat in results.numerical[0][first_col].keys() %}
+                                    <th class="p-4 border-b border-gray-100 bg-gray-200">{{ stat }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for col, stats in results.numerical[0].items() %}
+                            <tr>
+                                <td class="p-4 border-b border-gray-100 bg-white">{{ col }}</td>
+                                {% for value in stats.values() %}
+                                    <td class="p-4 border-b border-gray-100 bg-white">{{ value }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>                        
+                    </table>
+                </div>
+                <div>
+                    <h4 class="text-xl font-bold text-center my-4">Plots</h4>
+                    {% for plot in results.numerical[1] %}
+                        <img class='image' src="{{ url_for('static', filename=plot.replace('static/', '')) }}" alt="numerical analysis plot">
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+
+        {% if 'categorical' in results %}
+            <section class="my-6 flex flex-col items-center">
+                <h3 class="text-2xl font-bold text-center my-4">Categorical Features</h3>
+                <div>
+                    <h4 class="text-xl font-bold text-center my-4">Stats</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="p-4 border-b border-gray-100 bg-gray-200">column</th>
+                                {% set first_col = results.categorical[0] | first %}
+                                {% for stat in results.categorical[0][first_col].keys() %}
+                                    <th class="p-4 border-b border-gray-100 bg-gray-200">{{ stat }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for col, stats in results.categorical[0].items() %}
+                            <tr>
+                                <td class="p-4 border-b border-gray-100 bg-white">{{ col }}</td>
+                                {% for value in stats.values() %}
+                                    <td class="p-4 border-b border-gray-100 bg-white">{{ value }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                    <h4 class="text-xl font-bold text-center my-4">Plots</h4>
+                    {% for plot in results.categorical[1] %}
+                        <img class='image' src="{{ url_for('static', filename=plot.replace('static/', '')) }}" alt="numerical analysis plot">
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+        
+        {% if 'text' in results %}
+            <section class="my-6 flex flex-col items-center">
+                <h3 class="text-2xl font-bold text-center my-4">Text Features</h3>
+                <div>
+                    <h4 class="text-xl font-bold text-center my-4">Stats</h4>
+                    <table class="table-auto border-collapse text-left">
+                        <thead>
+                            <tr>
+                                <th class="p-4 border-b border-gray-100 bg-gray-200">column</th>
+                                {% set first_col = results.text[0] | first %}
+                                {% for stat in results.text[0][first_col].keys() %}
+                                    <th class="p-4 border-b border-gray-100 bg-gray-200">{{ stat }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for col, stats in results.text[0].items() %}
+                            <tr>
+                                <td class="p-4 border-b border-gray-100 bg-white">{{ col }}</td>
+                                {% for value in stats.values() %}
+                                    <td class="p-4 border-b border-gray-100 bg-white">{{ value }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                    <h4 class="text-xl font-bold text-center my-4">Plots</h4>
+                    {% for plot in results.text[1] %}
+                        <img class='image' src="{{ url_for('static', filename=plot.replace('static/', '')) }}" alt="text analysis plot">
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+    {% endif %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            const spinner = document.getElementById('analysis-spinner'); // Usa l'ID del tuo spinner
+            
+            form.addEventListener('submit', function() {
+                spinner.style.display = 'block';
+            });
+        });
+    </script>
+
+{% endblock %}

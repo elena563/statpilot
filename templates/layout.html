@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StatPilot - Statistical Analysis Simplified</title>
+    <link href="/static/style.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen">
+    <nav class="bg-white/80 backdrop-blur-sm border-b border-gray-200 fixed w-full z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/" class="flex items-center gap-2">
+                        <span class="font-bold text-lg tech-dark-purple">StatPilot</span>
+                    </a>
+                </div>
+                <div class="hidden md:flex items-center space-x-4">
+                    <a href="/analyze" class="text-gray-600 hover:text-purple-500 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1">
+                        <span>Data Analysis</span>
+                    </a>
+                    <a href="/model" class="text-gray-600 hover:text-purple-500 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1">
+                        <span>Machine Learning</span>
+                    </a>
+                    <a href="/explain" class="text-gray-600 hover:text-purple-500 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1">
+                        <span>Explainable AI</span>
+                    </a>
+                    <button class="ml-4 border border-purple-500 text-purple-500 hover:bg-purple-50 px-4 py-2 text-sm font-medium rounded">
+                        Get Started
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    {% block main %}{% endblock %}
+
+    <footer class="tech-soft-gray py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center text-gray-600">
+                <p>© 2025 StatPilot. Project by <a href="https://elenazen.it/" class="underline">Elena Zen</a>. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

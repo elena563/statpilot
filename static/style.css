@@ -1,0 +1,60 @@
+*{
+    box-sizing: border-box;
+}
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f9f7fc;
+}
+.gradient-purple {
+    background: linear-gradient(to right, #9b87f5, #D6BCFA);
+}
+.hover-scale {
+    transition: transform 0.3s ease;
+}
+.hover-scale:hover {
+    transform: scale(1.05);
+}
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.tech-purple {
+    color: #9b87f5;
+}
+.tech-dark-purple {
+    color: #1A1F2C;
+}
+.tech-soft-gray {
+    background-color: #F1F0FB;
+}
+.image{
+    width: clamp(200px, 60vw, 800px);
+    padding: 20px;
+}
+table{
+    max-width: 100%;
+}
+/* HTML: <div class="loader"></div> */
+.loader {
+    width: 50px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: 
+      radial-gradient(farthest-side,#a855f7 94%,#0000) top/8px 8px no-repeat,
+      conic-gradient(#0000 30%,#a855f7);
+    -webkit-mask: radial-gradient(farthest-side,#0000 calc(100% - 8px),#000 0);
+    mask: radial-gradient(farthest-side,#0000 calc(100% - 8px),#000 0);
+    animation: l13 1s infinite linear;
+  }
+  @keyframes l13{ 
+    100%{transform: rotate(1turn)}
+  }

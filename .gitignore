@@ -1,0 +1,3 @@
+static/temp/*
+__pycache__/*
+modules/*
