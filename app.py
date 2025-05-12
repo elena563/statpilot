@@ -71,7 +71,17 @@ def analyze():
 
 @app.route("/model")
 def model():
-    return render_template("modeling.html")
+
+    model = request.form.get('model')
+
+    if request.method == 'POST':
+        file = request.files['dataset']
+        if not file:
+            return render_template("analysis.html", error='No file submitted')
+        
+        return render_template("analysis.html")
+    else:
+        return render_template("modeling.html")
 
 @app.route("/explain")
 def explain():

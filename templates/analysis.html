@@ -2,7 +2,7 @@
 
 {% block main %}
 
-    <main class="relative overflow-hidden bg-gradient-to-b from-gray-100 to-white pt-4">
+    <main class="relative overflow-hidden bg-white pt-4">
         <div class="bg-white flex flex-col items-center w-full px-4 sm:px-6 lg:px-8 pb-6 pt-20">
             <div class="w-16 h-16 rounded-xl gradient-purple flex items-center justify-center mb-4">
                 <svg fill="#ffffff" height="200px" width="200px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg"
@@ -144,15 +144,5 @@
             </section>
         {% endif %}
     {% endif %}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.querySelector('form');
-            const spinner = document.getElementById('analysis-spinner'); // Usa l'ID del tuo spinner
-            
-            form.addEventListener('submit', function() {
-                spinner.style.display = 'block';
-            });
-        });
-    </script>
 
 {% endblock %}

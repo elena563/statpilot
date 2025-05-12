@@ -43,7 +43,10 @@ body {
 table{
     max-width: 100%;
 }
-/* HTML: <div class="loader"></div> */
+.input-cont{
+    border: solid 1px black;
+    padding: 5px 7px;
+}
 .loader {
     width: 50px;
     aspect-ratio: 1;
