@@ -1,13 +1,17 @@
 import os
 import shutil
 from flask import Flask, flash, redirect, render_template, request, send_from_directory
+import pandas as pd
+from pathlib import Path
 import time
 import threading
-from modules.analysis import analyze_csv
+from modules.analysis import analyze_csv, get_session_dir
+from modules.modeling import train_model
 
 # configure application
 app = Flask(__name__)
 app.debug = True
+app.secret_key = "sT4tz42!mylittlesecret"   # dev server key
 
 # prevent caching
 @app.after_request
@@ -69,17 +73,28 @@ def analyze():
     else:
         return render_template("analysis.html")
 
-@app.route("/model")
+@app.route("/model", methods=["GET", "POST"])
 def model():
 
-    model = request.form.get('model')
+    model_type = request.form.get('model')
 
     if request.method == 'POST':
-        file = request.files['dataset']
-        if not file:
-            return render_template("analysis.html", error='No file submitted')
+        if 'dataset' in request.files:
+            file = request.files['dataset']
+            if not file:
+                return render_template("modeling.html", error='No file submitted')
+            df = pd.read_csv(file)
+            session_dir = get_session_dir()
+            path = str(Path(session_dir) / "dataset.csv").replace('\\', '/') 
+            columns = df.columns.to_list()
+            return render_template("modeling.html", columns=columns)
         
-        return render_template("analysis.html")
+        elif 'target' in request.form:
+            df = pd.read_csv(path)
+            y = request.files['target']
+            results = train_model(df, y, model_type)
+
+        return render_template("modeling.html", results=results)
     else:
         return render_template("modeling.html")
 

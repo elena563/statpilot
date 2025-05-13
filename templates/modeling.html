@@ -33,7 +33,19 @@
                 <div class="input-cont"><input type="radio" name="model" value="Elastic Net Regression">  Elastic Net Regression</div>
                 <div class="input-cont"><input type="radio" name="model" value="Gradient Boosting Regression">  Gradient Boosting Regression</div>
             </div>
-            <button type="submit" class="bg-purple-500 hover:bg-purple-600 text-white px-8 py-2 rounded-md font-medium">Train</button>
+
+            {% if columns %}
+                <label for="target">Select your target variable:</label>
+                <select name="target">
+                {% for col in columns %}
+                    <option value="{{ col }}">{{ col }}</option>
+                {% endfor %}
+                </select>
+            {% endif %}
+
+            <button type="submit" class="bg-purple-500 hover:bg-purple-600 text-white px-8 py-2 rounded-md font-medium">
+                {% if columns %}Train{% else %}Upload{% endif %}
+            </button>
         </form>
     </main>
     <div class="flex justify-center my-6">
