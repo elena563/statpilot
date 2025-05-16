@@ -1,6 +1,6 @@
 import os
 import shutil
-from flask import Flask, flash, redirect, render_template, request, send_from_directory
+from flask import Flask, render_template, request, send_from_directory, send_file
 import pandas as pd
 from pathlib import Path
 import time
@@ -76,31 +76,54 @@ def analyze():
 @app.route("/model", methods=["GET", "POST"])
 def model():
 
-    model_type = request.form.get('model')
+    session_dir = get_session_dir()
+    path = session_dir / "dataset.csv"
 
     if request.method == 'POST':
+
         if 'dataset' in request.files:
             file = request.files['dataset']
             if not file:
                 return render_template("modeling.html", error='No file submitted')
-            df = pd.read_csv(file)
-            session_dir = get_session_dir()
-            path = str(Path(session_dir) / "dataset.csv").replace('\\', '/') 
+            session_dir = get_session_dir()  
+        
+            session_id = session_dir.name
+
+            path = session_dir / "dataset.csv"
+            df = pd.read_csv(file) 
+            df.to_csv(path, index=False)
+            
             columns = df.columns.to_list()
-            return render_template("modeling.html", columns=columns)
+            return render_template("modeling.html", columns=columns, session_id=session_id)
         
         elif 'target' in request.form:
+            session_id = request.form.get('session_id')  # prendi l'id inviato
+            session_dir = Path("static") / "temp" / session_id
+            path = session_dir / "dataset.csv"
             df = pd.read_csv(path)
-            y = request.files['target']
-            results = train_model(df, y, model_type)
+            model_type = request.form.get('model')
+            target = request.form.get('target')
+            results = train_model(df, target, model_type, session_id=session_id)
 
-        return render_template("modeling.html", results=results)
+        return render_template("modeling.html", results=results, session_id=session_id)
     else:
         return render_template("modeling.html")
 
 @app.route("/explain")
 def explain():
     return render_template("explainability.html")
+
+@app.route("/download_model")
+def download_model():
+    session_id = request.args.get('session_id')
+    if not session_id:
+        return "Session ID mancante", 400
+
+    path = Path("static") / "temp" / session_id / "model.pkl"
+    if not path.exists():
+        return "Modello non trovato", 404
+
+    return send_file(path, as_attachment=True, download_name="model.pkl")
 
 @app.route('/download/<path:filename>')
 def download_file(filename):

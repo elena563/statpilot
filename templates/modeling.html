@@ -18,25 +18,28 @@
             </p>
         </div>
         <form class='flex flex-col align-center mx-auto mb-6 max-w-xs gap-4' method="POST" enctype="multipart/form-data">
-            <input type="file" name="dataset" required>
-            <div class="flex gap-4 justify-around">
-                <div class="input-cont"><input type="radio" name="type" value="Classification" id="classif">  Classification</div>
-                <div class="input-cont"><input type="radio" name="type" value="Regression" id="regr">  Regression</div>
-            </div>
-            <div id="classif-models" class="flex flex-col hidden gap-4">
-                <div class="input-cont"><input type="radio" name="model" value="Logistic Regression">  Logistic Regression</div>
-                <div class="input-cont"><input type="radio" name="model" value="Random Forest">  Random Forest</div>
-                <div class="input-cont"><input type="radio" name="model" value="Naive Bayes">  Naive Bayes</div>
-            </div>
-            <div id="regr-models" class="flex flex-col hidden gap-4">
-                <div class="input-cont"><input type="radio" name="model" value="Linear Regression">  Linear Regression</div>
-                <div class="input-cont"><input type="radio" name="model" value="Elastic Net Regression">  Elastic Net Regression</div>
-                <div class="input-cont"><input type="radio" name="model" value="Gradient Boosting Regression">  Gradient Boosting Regression</div>
-            </div>
+            <input type="hidden" name="session_id" value="{{ session_id }}">
+            {% if not columns %}
+                <input type="file" name="dataset" required>
+            {% endif %}
 
             {% if columns %}
+                <div class="flex gap-4 justify-around">
+                    <div class="input-cont"><input type="radio" name="type" value="Classification" id="classif">  Classification</div>
+                    <div class="input-cont"><input type="radio" name="type" value="Regression" id="regr">  Regression</div>
+                </div>
+                <div id="classif-models" class="flex flex-col hidden gap-4">
+                    <div class="input-cont"><input type="radio" name="model" value="Logistic Regression">  Logistic Regression</div>
+                    <div class="input-cont"><input type="radio" name="model" value="Random Forest">  Random Forest</div>
+                    <div class="input-cont"><input type="radio" name="model" value="Naive Bayes">  Naive Bayes</div>
+                </div>
+                <div id="regr-models" class="flex flex-col hidden gap-4">
+                    <div class="input-cont"><input type="radio" name="model" value="Linear Regression">  Linear Regression</div>
+                    <div class="input-cont"><input type="radio" name="model" value="Elastic Net Regression">  Elastic Net Regression</div>
+                    <div class="input-cont"><input type="radio" name="model" value="Gradient Boosting Regression">  Gradient Boosting Regression</div>
+                </div>
                 <label for="target">Select your target variable:</label>
-                <select name="target">
+                <select name="target" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5">
                 {% for col in columns %}
                     <option value="{{ col }}">{{ col }}</option>
                 {% endfor %}
@@ -56,20 +59,24 @@
             <p style="color:red">{{ error }}</p>
     {% endif %}
 
-    {% if stats %}
-        <section>
-            <h3>Descriptive Stats</h3>
-            <table>
-                <thead></thead>
-                {% for col, values in stats.items() %}
-                    <li><strong>{{ col }}</strong>: {{ values }}</li>
+    {% if results %}
+        <section class="my-6 flex flex-col items-center">
+            <h3 class="text-2xl font-bold text-center my-4">Model Performance</h3>
+            <table class="max-w-3xl">
+                {% for metric, value in results.items() %}
+                <tr>
+                    <td class="p-4 border-b border-gray-100 bg-gray-200"><strong>{{ metric }}</strong></td>
+                    <td class="p-4 border-b border-gray-100 bg-white"> {{ value }}</td>
+                </tr>
                 {% endfor %}
             </table>
-            <h3>Plots</h3>
-            {% for plot in plots %}
-                <img src="{{ plot }}" width="500">
-            {% endfor %}
 
+            <p class="mt-6 mb-2">Click here to download your model in pickle format!</p>
+            <a href="/download_model?session_id={{ session_id }}" class="border border-purple-500 text-purple-500 hover:bg-purple-50 px-8 py-2 rounded-md font-medium">Download</a>
+        </section>
+
+        <section>
+            <h3>Test your model</h3>
         </section>
     {% endif %}
 

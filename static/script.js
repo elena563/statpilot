@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
+/*interactive form for modeling section*/      
 const classif = document.getElementById("classif");
 const regr = document.getElementById("regr");
 const classOpt = document.getElementById("classif-models");

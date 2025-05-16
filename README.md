@@ -20,10 +20,10 @@ This is my final project for CS50x course. It's an interactive web application f
 ```
 /project-root
 │
-├── app.py # Main Flask app
-├── templates/ # HTML pages
-├── static/ # CSS, images, charts
-├── modules/ # Custom Python modules (analysis, modeling, etc.)
+├── app.py      # Main Flask app
+├── templates/  # HTML pages
+├── static/     # CSS, JS, temp folder for datasets/plots
+├── modules/ 
 │ ├── analysis.py
 │ ├── modeling.py
 │ └── explainability.py
