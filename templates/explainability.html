@@ -14,11 +14,18 @@
                 This page helps you understand how your trained machine learning model makes decisions by visualizing feature importance and generating explanations.
                 This is especially useful for building trust in your models and identifying potential biases or unexpected patterns.
                 Upload a trained model and the corresponding dataset used to train it. The system will use techniques like SHAP to show which features influenced predictions the most.
+                Then you can ask local explanation for one specific observation in your data.
             </p>
         </div>
         <form method="POST" enctype="multipart/form-data">
-            <input type="file" name="dataset" required>
-            <button type="submit" class="bg-purple-500 hover:bg-purple-600 text-white px-8 py-2 rounded-md font-medium">Analyze</button>
+            <input type="hidden" name="form_type" value="global_form">
+            <input type="hidden" name="session_id" value="{{ session_id }}">
+            <label for="dataset">Upload your dataset (.csv):</label>
+            <input type="file" name="dataset" id="dataset" required>
+
+            <label for="model">Upload your model (.pkl):</label>
+            <input type="file" name="model" id="model" required>
+            <button type="submit" class="bg-purple-500 hover:bg-purple-600 text-white px-8 py-2 rounded-md font-medium">Explain</button>
         </form>
     </main>
 
@@ -26,16 +33,50 @@
             <p style="color:red">{{ error }}</p>
     {% endif %}
 
-    {% if stats %}
-        <section>
-            <h3>Descriptive Stats</h3>
+    {% if summary_plot %}
+        <section class="my-6 flex flex-col items-center">
+            <h3>Global Variable Importance</h3>
+            <p>The global SHAP summary plot displays the overall importance and impact of each feature 
+                across the entire dataset. Each point represents a sample's SHAP value for a given 
+                feature, showing how much that feature influenced the model's output for that instance. 
+                The position on the x-axis shows whether the feature pushed the prediction higher 
+                (positive SHAP value) or lower (negative SHAP value). The color typically represents the
+                 feature value (e.g., red for high, blue for low). This plot helps identify which features 
+                 have the strongest influence on model decisions in general.</p>
+            <img src="{{ plot }}" width="500">
+        </section>
+
+        <h3>Local Explanation</h3>
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="form_type" value="local_form">
+            <label for="obs">Insert the index corresponding your observation:</label>
+            <input type="number" name="obs" id="obs" required>
+            <button type="submit" class="bg-purple-500 hover:bg-purple-600 text-white px-8 py-2 rounded-md font-medium">Explain</button>
+        </form>
+    {% endif %}
+
+    {% if plots %}
+        <section class="my-6 flex flex-col items-center">
+            <h3>Local Variable Explanation</h3>
             <table>
-                <thead></thead>
-                {% for col, values in stats.items() %}
-                    <li><strong>{{ col }}</strong>: {{ values }}</li>
+                <thead>
+                    {% for name in feature_names %}
+                        <th>{{ name }}</th>
+                    {% endfor %}
+                    <th>predicted class</th>
+                </thead>
+                {% for value in row %}
+                    <td>{{ value }}</td>
                 {% endfor %}
+                <td>{{ y_pred }}</td>
             </table>
-            <h3>Plots</h3>
+            <p>Local SHAP plots explain the prediction for a single instance by showing how each feature 
+                contributes to pushing the model output from the baseline (average prediction) to the final 
+                predicted value. For example, the force plot uses arrows and colors to illustrate positive 
+                and negative contributions, making it easy to see why the model made a specific prediction. 
+                The waterfall plot breaks down the effect of each feature step-by-step. These local 
+                explanations are useful for understanding individual predictions in detail and for 
+                communicating model decisions to end users.</p>
             {% for plot in plots %}
                 <img src="{{ plot }}" width="500">
             {% endfor %}

@@ -1,12 +1,14 @@
 import os
 import shutil
 from flask import Flask, render_template, request, send_from_directory, send_file
+import joblib
 import pandas as pd
 from pathlib import Path
 import time
 import threading
 from modules.analysis import analyze_csv, get_session_dir
 from modules.modeling import train_model
+from modules.explainability import explain_global, explain_local
 
 # configure application
 app = Flask(__name__)
@@ -46,15 +48,14 @@ def schedule_cleanup(interval_hours=12):
         time.sleep(interval_hours * 3600)
 
 def init_cleanup():
-    # Crea la directory temp se non esiste
     os.makedirs(os.path.join("static", "temp"), exist_ok=True)
     
-    # Esegui pulizia all'avvio
+    # clean at start
     cleanup_temp_dirs()
     
-    # Avvia thread per pulizia periodica
+    # periodic cleaning
     cleanup_thread = threading.Thread(target=schedule_cleanup)
-    cleanup_thread.daemon = True  # Il thread terminerà quando l'app si chiude
+    cleanup_thread.daemon = True
     cleanup_thread.start()
 
 
@@ -73,6 +74,7 @@ def analyze():
     else:
         return render_template("analysis.html")
 
+
 @app.route("/model", methods=["GET", "POST"])
 def model():
 
@@ -85,8 +87,9 @@ def model():
             file = request.files['dataset']
             if not file:
                 return render_template("modeling.html", error='No file submitted')
+            # temporary save dataset to pass it to the form
             session_dir = get_session_dir()  
-        
+
             session_id = session_dir.name
 
             path = session_dir / "dataset.csv"
@@ -109,9 +112,47 @@ def model():
     else:
         return render_template("modeling.html")
 
-@app.route("/explain")
+
+@app.route("/explain", methods=["GET", "POST"])
 def explain():
-    return render_template("explainability.html")
+
+    if request.method == 'POST':
+        xtest_file = request.files['xtest']
+        model_file = request.files['model']
+        if not xtest_file or not model_file:
+            return render_template("explainability.html", error='No file submitted')
+        form_type = request.form.get("form_type")
+        
+        if form_type == 'global_form':
+            # temporary save dataset and model to pass them to the form
+            session_dir = get_session_dir()  
+            session_id = session_dir.name
+
+            X_path = session_dir / "xtest.csv"
+            model_path = session_dir / "model.pkl"
+            X_test = pd.read_csv(xtest_file)
+            model = joblib.load(model_file.stream) 
+            xtest_file.save(X_path)
+            model_file.save(model_path)
+
+            summary_plot = explain_global(model, X_test)
+            return render_template("explainability.html", summary_plot=summary_plot, session_id=session_id)
+        elif form_type == 'local_form':
+            session_id = request.form.get("session_id")
+            X_test = pd.read_csv(f"static/temp/{session_id}/xtest.csv")
+            model = joblib.load(f"static/temp/{session_id}/model.pkl")
+
+            obs_index = request.form.get("obs")
+            row = X_test.iloc[obs_index].tolist()
+            y_pred = model.predict(row)
+            feature_names = list(X_test.columns)
+
+            plots = explain_local(obs_index, model, X_test)
+
+            return render_template("explainability.html", plots=plots, row=row, y_pred=y_pred, feature_names=feature_names)
+    else:
+        return render_template("explainability.html")
+
 
 @app.route("/download_model")
 def download_model():

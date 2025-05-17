@@ -13,7 +13,7 @@
             <h2 class="text-3xl font-bold text-center tech-dark-purple mb-12">Predictive Modeling</h2>
             <p class="text-l md:text-l text-gray-600 max-w-3xl mx-auto mb-8 animate-fade-in" style="animation-delay: 0.2s;">
                 This section lets you build and evaluate machine learning models directly from your dataset. No coding needed—just upload your data and choose a model.
-                Start by uploading a CSV with at least one target variable (column to predict) and several feature columns. Select your model type (e.g., linear regression, decision tree), then click "Train".
+                Start by uploading a CSV with at least one target variable (column to predict) and several feature columns. First upload your dataset, then select your model type (e.g., linear regression, decision tree), your preferred target variable, and click "Train".
                 The app will train the model, show performance metrics (accuracy, precision, etc.), allow you to test it with new data and download it if needed.
             </p>
         </div>
@@ -25,18 +25,18 @@
 
             {% if columns %}
                 <div class="flex gap-4 justify-around">
-                    <div class="input-cont"><input type="radio" name="type" value="Classification" id="classif">  Classification</div>
-                    <div class="input-cont"><input type="radio" name="type" value="Regression" id="regr">  Regression</div>
+                    <label class="input-cont"><input type="radio" name="type" value="Classification" id="classif" class="accent-purple-500">  Classification</label>
+                    <label class="input-cont"><input type="radio" name="type" value="Regression" id="regr" class="accent-purple-500">  Regression</label>
                 </div>
                 <div id="classif-models" class="flex flex-col hidden gap-4">
-                    <div class="input-cont"><input type="radio" name="model" value="Logistic Regression">  Logistic Regression</div>
-                    <div class="input-cont"><input type="radio" name="model" value="Random Forest">  Random Forest</div>
-                    <div class="input-cont"><input type="radio" name="model" value="Naive Bayes">  Naive Bayes</div>
+                    <label class="input-cont"><input type="radio" name="model" value="Logistic Regression" class="accent-purple-500">  Logistic Regression</label>
+                    <label class="input-cont"><input type="radio" name="model" value="Random Forest" class="accent-purple-500">  Random Forest</label>
+                    <label class="input-cont"><input type="radio" name="model" value="Naive Bayes" class="accent-purple-500">  Naive Bayes</label>
                 </div>
                 <div id="regr-models" class="flex flex-col hidden gap-4">
-                    <div class="input-cont"><input type="radio" name="model" value="Linear Regression">  Linear Regression</div>
-                    <div class="input-cont"><input type="radio" name="model" value="Elastic Net Regression">  Elastic Net Regression</div>
-                    <div class="input-cont"><input type="radio" name="model" value="Gradient Boosting Regression">  Gradient Boosting Regression</div>
+                    <label class="input-cont"><input type="radio" name="model" value="Linear Regression" class="accent-purple-500">  Linear Regression</label>
+                    <label class="input-cont"><input type="radio" name="model" value="Elastic Net Regression" class="accent-purple-500">  Elastic Net Regression</label>
+                    <label class="input-cont"><input type="radio" name="model" value="Gradient Boosting Regression" class="accent-purple-500">  Gradient Boosting Regression</label>
                 </div>
                 <label for="target">Select your target variable:</label>
                 <select name="target" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5">

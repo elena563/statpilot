@@ -5,6 +5,9 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background-color: #f9f7fc;
 }
+input:hover, label:hover, select:hover{
+    cursor: pointer;
+}
 .gradient-purple {
     background: linear-gradient(to right, #9b87f5, #D6BCFA);
 }
