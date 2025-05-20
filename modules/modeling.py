@@ -4,10 +4,9 @@ import joblib
 from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingRegressor
 from sklearn.linear_model import LinearRegression, ElasticNet, LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_error, precision_score, r2_score, recall_score, root_mean_squared_error
 from sklearn.model_selection import train_test_split
-from sklearn.naive_bayes import GaussianNB
-from modules.analysis import get_session_dir
 
 def train_model(df, target, model_type, session_id):
 
@@ -39,8 +38,8 @@ def train_model(df, target, model_type, session_id):
         case 'Random Forest':
             model = RandomForestClassifier()
             task = 'classif'
-        case 'Naive Bayes':
-            model = GaussianNB() 
+        case 'Decision Tree':
+            model = DecisionTreeClassifier() 
             task = 'classif'
     try:
         if task != target_type:
@@ -70,5 +69,8 @@ def train_model(df, target, model_type, session_id):
 
     path = Path("static") / "temp" / session_id / "model.pkl"
     joblib.dump(model, path)
+
+    path = Path("static") / "temp" / session_id / "xtest.csv"
+    X_test.to_csv(path, index=False)
 
     return results

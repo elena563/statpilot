@@ -13,7 +13,7 @@ This is my final project for CS50x course. It's an interactive web application f
 - Python, Flask
 - Pandas, Scikit-learn, Matplotlib, Seaborn, NLTK, Wordcloud, shap
 - Jinja2 for templating
-- HTML/CSS/JS for frontend
+- HTML/CSS(+Tailwind)/JS for frontend
 - Figma for logo design
 
 ## Project Structure

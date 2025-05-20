@@ -31,7 +31,7 @@
                 <div id="classif-models" class="flex flex-col hidden gap-4">
                     <label class="input-cont"><input type="radio" name="model" value="Logistic Regression" class="accent-purple-500">  Logistic Regression</label>
                     <label class="input-cont"><input type="radio" name="model" value="Random Forest" class="accent-purple-500">  Random Forest</label>
-                    <label class="input-cont"><input type="radio" name="model" value="Naive Bayes" class="accent-purple-500">  Naive Bayes</label>
+                    <label class="input-cont"><input type="radio" name="model" value="Decision Tree" class="accent-purple-500">  Decision Tree</label>
                 </div>
                 <div id="regr-models" class="flex flex-col hidden gap-4">
                     <label class="input-cont"><input type="radio" name="model" value="Linear Regression" class="accent-purple-500">  Linear Regression</label>
@@ -71,8 +71,11 @@
                 {% endfor %}
             </table>
 
-            <p class="mt-6 mb-2">Click here to download your model in pickle format!</p>
-            <a href="/download_model?session_id={{ session_id }}" class="border border-purple-500 text-purple-500 hover:bg-purple-50 px-8 py-2 rounded-md font-medium">Download</a>
+            <p class="mt-6 mb-2">Click here to download your model in pickle format or your test set csv!</p>
+            <div class="flex gap-4">
+                <a href="/download_model?session_id={{ session_id }}&file=model" class="border border-purple-500 text-purple-500 hover:bg-purple-50 px-8 py-2 rounded-md font-medium">Download model</a>
+                <a href="/download_model?session_id={{ session_id }}&file=xtest" class="border border-purple-500 text-purple-500 hover:bg-purple-50 px-8 py-2 rounded-md font-medium">Download test set</a>
+            </div>
         </section>
 
         <section>
