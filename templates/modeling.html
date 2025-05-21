@@ -19,6 +19,7 @@
         </div>
         <form class='flex flex-col align-center mx-auto mb-6 max-w-xs gap-4' method="POST" enctype="multipart/form-data">
             <input type="hidden" name="session_id" value="{{ session_id }}">
+            <input type="hidden" name="form_type" value="train_form">
             {% if not columns %}
                 <input type="file" name="dataset" required>
             {% endif %}
@@ -52,7 +53,7 @@
         </form>
     </main>
     <div class="flex justify-center my-6">
-        <div class="loader hidden" id="analysis-spinner"></div>
+        <div class="loader hidden" id="spinner"></div>
     </div>
 
     {% if error %}
@@ -78,8 +79,22 @@
             </div>
         </section>
 
-        <section>
-            <h3>Test your model</h3>
+        <section class="bg-white my-8 py-6">
+            <h3 class="text-2xl font-bold text-center my-4">Test your model on new data</h3>
+            <form class='flex flex-col align-center mx-auto mb-6 max-w-xs gap-4' method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="form_type" value="test_form">
+                <input type="hidden" name="session_id" value="{{ session_id }}">
+                <p class="max-w-3xl mb-4">Insert each feature value for your observation:</p>
+                {% for item in input_info %}
+                    <label for="{{ item.name }}">{{ item.name }}:</label>
+                    <input class="input-cont"
+                        type="{{ item.type }}"
+                        name="{{ item.name }}"
+                        id="{{ item.name }}"
+                        required>
+                {% endfor %}
+                <button type="submit" class="bg-purple-500 hover:bg-purple-600 text-white px-8 py-2 rounded-md font-medium">Test</button>
+            </form>
         </section>
     {% endif %}
 

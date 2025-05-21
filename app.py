@@ -7,7 +7,7 @@ from pathlib import Path
 import time
 import threading
 from modules.analysis import analyze_csv, get_session_dir
-from modules.modeling import train_model
+from modules.modeling import train_model, test_model
 from modules.explainability import explain_global, explain_local
 
 # configure application
@@ -80,35 +80,59 @@ def model():
 
     session_dir = get_session_dir()
     path = session_dir / "dataset.csv"
+    form_type = request.form.get("form_type")
 
     if request.method == 'POST':
 
-        if 'dataset' in request.files:
-            file = request.files['dataset']
-            if not file:
-                return render_template("modeling.html", error='No file submitted')
-            # temporary save dataset to pass it to the form
-            session_dir = get_session_dir()  
+        if form_type == 'train_form':
 
-            session_id = session_dir.name
+            if 'dataset' in request.files:
+                file = request.files['dataset']
+                if not file:
+                    return render_template("modeling.html", error='No file submitted')
+                # temporary save dataset to pass it to the form
+                session_dir = get_session_dir()  
 
-            path = session_dir / "dataset.csv"
-            df = pd.read_csv(file) 
-            df.to_csv(path, index=False)
+                session_id = session_dir.name
+
+                path = session_dir / "dataset.csv"
+                df = pd.read_csv(file) 
+                df.to_csv(path, index=False)
+                
+                columns = df.columns.to_list()
+                return render_template("modeling.html", columns=columns, session_id=session_id)
             
-            columns = df.columns.to_list()
-            return render_template("modeling.html", columns=columns, session_id=session_id)
-        
-        elif 'target' in request.form:
-            session_id = request.form.get('session_id')  # prendi l'id inviato
-            session_dir = Path("static") / "temp" / session_id
-            path = session_dir / "dataset.csv"
-            df = pd.read_csv(path)
-            model_type = request.form.get('model')
-            target = request.form.get('target')
-            results = train_model(df, target, model_type, session_id=session_id)
+            elif 'target' in request.form:
+                session_id = request.form.get('session_id')  # prendi l'id inviato
+                session_dir = Path("static") / "temp" / session_id
+                path = session_dir / "dataset.csv"
+                df = pd.read_csv(path)
+                model_path = session_dir / "model.pkl"
+    
+                model_path.save(model_path)
 
-        return render_template("modeling.html", results=results, session_id=session_id)
+                model_type = request.form.get('model')
+                target = request.form.get('target')
+                results, input_info = train_model(df, target, model_type, session_id=session_id)
+
+            return render_template("modeling.html", results=results, session_id=session_id, input_info=input_info)
+        
+        elif form_type == 'test_form':
+            session_id = request.form.get("session_id")
+            session_dir = Path("static") / "temp" / session_id
+
+            path = session_dir / "dataset.csv"
+            model_path = session_dir / "model.pkl"
+
+            df = pd.read_csv(path)
+            model = joblib.load(model_path)
+
+            input_data = {col: request.form.get(col) for col in df.columns}
+            if None in input_data.values():
+                return render_template("modeling.html", error="Please insert a value for each input feature")
+
+            result = test_model(df, model, input_data)
+            return render_template("modeling.html", result=result, session_id=session_id)
     else:
         return render_template("modeling.html")
 
@@ -151,7 +175,7 @@ def explain():
             y_pred = model.predict(row)
             feature_names = list(X_test.columns)
             row_list = row.flatten().tolist()
-            y_pred2 = y_pred.flatten()
+            y_pred2 = y_pred[0]
 
             plots = explain_local(obs_index, model, X_test)
 

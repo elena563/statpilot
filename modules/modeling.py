@@ -73,4 +73,24 @@ def train_model(df, target, model_type, session_id):
     path = Path("static") / "temp" / session_id / "xtest.csv"
     X_test.to_csv(path, index=False)
 
-    return results
+    input_info = []
+    for col in df.columns:
+        dtype = df[col].dtype
+        if pd.api.types.is_numeric_dtype(dtype):
+            input_type = "number"
+        else:
+            input_type = "text"
+        input_info.append({"name": col, "type": input_type})
+
+    return results, input_info
+
+def test_model(df, model, input_data):
+
+    input_series = pd.Series(input_data)
+    X = input_series.to_frame().T
+
+    X = X.astype(df.dtypes.to_dict())
+    X = pd.get_dummies(X)
+    y_pred = model.predict(X)
+
+    return y_pred

@@ -29,7 +29,7 @@
         </form>
     </main>
     <div class="flex justify-center my-6">
-        <div class="loader hidden" id="analysis-spinner"></div>
+        <div class="loader hidden" id="spinner"></div>
     </div>
 
     {% if error %}
@@ -61,21 +61,35 @@
     {% endif %}
 
     {% if plots %}
-        <section class="my-6 flex flex-col items-center">
+        <section class="my-6 flex flex-col items-center relative">
             <h3 class="text-2xl font-bold text-center my-4">Local Variable Explanation</h3>
-            <table class="max-w-3xl">
-                <thead>
-                    {% for name in feature_names %}
-                        <th class="p-4 border-b border-gray-100 bg-gray-200">{{ name }}</th>
+            <div style="overflow-x: auto; max-width: 90%;">
+                <table class="max-w-3xl">
+                    <thead>
+                        {% for name in feature_names %}
+                            <th class="p-4 border-b border-gray-100 bg-gray-200">{{ name }}</th>
+                        {% endfor %}
+                        <th class="p-4 border-b border-gray-100 bg-gray-200">Predicted Class/Value</th>
+                    </thead>
+                    {% for value in row_list %}
+                        <td class="p-4 border-b border-gray-100 bg-white">
+                            {% if value is number %}
+                                {{ value|round(3) }}
+                            {% else %}
+                                {{ value }}
+                            {% endif %}
+                        </td>
                     {% endfor %}
-                    <th class="p-4 border-b border-gray-100 bg-gray-200">Predicted Class</th>
-                </thead>
-                {% for value in row_list %}
-                    <td class="p-4 border-b border-gray-100 bg-white">{{ value }}</td>
-                {% endfor %}
-                <td class="p-4 border-b border-gray-100 bg-white">{{ y_pred }}</td>
-            </table>
-            <p class="max-w-3xl my-4">Local SHAP plots explain the prediction for a single instance by showing how each feature 
+                    <td class="p-4 border-b border-gray-100 bg-white">
+                        {% if y_pred2 is number %}
+                            {{ y_pred2|round(3) }}
+                        {% else %}
+                            {{ y_pred2 }}
+                        {% endif %}
+                    </td>
+                </table>
+            </div>
+            <p class="max-w-3xl my-6">Local SHAP plots explain the prediction for a single instance by showing how each feature 
                 contributes to pushing the model output from the baseline (average prediction) to the final 
                 predicted value. For example, the force plot uses arrows and colors to illustrate positive 
                 and negative contributions, making it easy to see why the model made a specific prediction. 
