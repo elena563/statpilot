@@ -41,11 +41,8 @@ def train_model(df, target, model_type, session_id):
         case 'Decision Tree':
             model = DecisionTreeClassifier() 
             task = 'classif'
-    try:
-        if task != target_type:
-            raise ValueError(f"Modello '{model_type}' non supportato per target {y}")
-    except ValueError as e:
-        return render_template("modeling.html", error=str(e))
+    if task != target_type:
+        raise ValueError(f"Modello '{model_type}' non supportato per target {target}")
 
 
     model.fit(X_train, y_train)
@@ -73,24 +70,31 @@ def train_model(df, target, model_type, session_id):
     path = Path("static") / "temp" / session_id / "xtest.csv"
     X_test.to_csv(path, index=False)
 
+    dfx = df.drop(columns=[target])
     input_info = []
-    for col in df.columns:
-        dtype = df[col].dtype
+    for col in dfx.columns:
+        dtype = dfx[col].dtype
         if pd.api.types.is_numeric_dtype(dtype):
-            input_type = "number"
+            input_info.append({"name": col, "type": 'number'})
+        elif pd.api.types.is_bool_dtype(dtype):
+            input_info.append({"name": col, "type": 'bool'})
         else:
-            input_type = "text"
-        input_info.append({"name": col, "type": input_type})
+            categories = dfx[col].dropna().unique().tolist()
+            input_info.append({'name': col, 'type': 'text', 'choices': categories})
 
     return results, input_info
 
-def test_model(df, model, input_data):
+def test_model(dfx, model, input_data):
 
     input_series = pd.Series(input_data)
     X = input_series.to_frame().T
 
-    X = X.astype(df.dtypes.to_dict())
+    X = X.astype(dfx.dtypes.to_dict())
     X = pd.get_dummies(X)
     y_pred = model.predict(X)
+    feature_names = list(dfx.columns)
+    row = X.iloc[0].values.reshape(1, -1)
+    row_list = row.flatten().tolist()
+    y_pred2 = y_pred[0]
 
-    return y_pred
+    return y_pred2, row_list, feature_names

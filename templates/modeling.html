@@ -57,7 +57,9 @@
     </div>
 
     {% if error %}
+        <div class="bg-[#ffe6e6] rounded-lg p-4 mx-auto max-w-xs text-center mb-8 font-bold">
             <p style="color:red">{{ error }}</p>
+        </div>
     {% endif %}
 
     {% if results %}
@@ -87,14 +89,53 @@
                 <p class="max-w-3xl mb-4">Insert each feature value for your observation:</p>
                 {% for item in input_info %}
                     <label for="{{ item.name }}">{{ item.name }}:</label>
-                    <input class="input-cont"
-                        type="{{ item.type }}"
-                        name="{{ item.name }}"
-                        id="{{ item.name }}"
-                        required>
+                    {% if item.type == 'bool' %}
+                        <select name="{{ item.name }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5" id="{{ item.name }}">
+                        <option value="True">True</option>
+                        <option value="False">False</option>
+                        </select>
+                     {% elif item.type == 'text' %}
+                        <select name="{{ item.name }}" id="{{ item.name }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5">
+                            {% for choice in item.choices %}
+                                <option value="{{ choice }}">{{ choice }}</option>
+                            {% endfor %}
+                        </select>
+
+                    {% else %}
+                        <input class="input-cont"
+                            type="{{ item.type }}"
+                            name="{{ item.name }}"
+                            id="{{ item.name }}"
+                            required>
+                    {% endif %}
                 {% endfor %}
                 <button type="submit" class="bg-purple-500 hover:bg-purple-600 text-white px-8 py-2 rounded-md font-medium">Test</button>
             </form>
+        </section>
+    {% endif %}
+
+    {% if result %}
+        <section class="my-6 flex flex-col items-center">
+            <h3 class="text-2xl font-bold text-center my-4">Model Testing</h3>
+            <div style="overflow-x: auto; max-width: 90%;">
+                <table class="max-w-3xl">
+                    <thead>
+                        {% for name in feature_names %}
+                            <th class="p-4 border-b border-gray-100 bg-gray-200">{{ name }}</th>
+                        {% endfor %}
+                    </thead>
+                    {% for value in row_list %}
+                        <td class="p-4 border-b border-gray-100 bg-white">
+                            {% if value is number %}
+                                {{ value|round(3) }}
+                            {% else %}
+                                {{ value }}
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                </table>
+            </div>
+            <h5 class="text-xl font-bold text-center my-4">{{ target }}: {{ result|round(3) }}</h5>
         </section>
     {% endif %}
 

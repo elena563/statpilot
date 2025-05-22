@@ -25,6 +25,20 @@ def is_text(series, threshold=20):
     return lengths.mean() > threshold
 
 
+
+def read_csv_sep(file):
+    seps = [',', ';', '\t', '|']
+    for sep in seps:
+        file.seek(0) 
+        try:
+            df = pd.read_csv(file, sep=sep)
+            if df.shape[1] > 1:  # more than one column
+                return df
+        except Exception:
+            continue
+    raise ValueError("Can't recognize separator")
+
+
 def analyze_num(df, num_cols, session_dir):
     num_df = df.select_dtypes(include="number")
     # descriptive stats

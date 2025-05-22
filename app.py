@@ -6,7 +6,7 @@ import pandas as pd
 from pathlib import Path
 import time
 import threading
-from modules.analysis import analyze_csv, get_session_dir
+from modules.analysis import analyze_csv, get_session_dir, read_csv_sep
 from modules.modeling import train_model, test_model
 from modules.explainability import explain_global, explain_local
 
@@ -96,7 +96,7 @@ def model():
                 session_id = session_dir.name
 
                 path = session_dir / "dataset.csv"
-                df = pd.read_csv(file) 
+                df = read_csv_sep(file) 
                 df.to_csv(path, index=False)
                 
                 columns = df.columns.to_list()
@@ -108,12 +108,14 @@ def model():
                 path = session_dir / "dataset.csv"
                 df = pd.read_csv(path)
                 model_path = session_dir / "model.pkl"
-    
-                model_path.save(model_path)
 
                 model_type = request.form.get('model')
                 target = request.form.get('target')
-                results, input_info = train_model(df, target, model_type, session_id=session_id)
+                (session_dir / "target.txt").write_text(target)
+                try:
+                    results, input_info = train_model(df, target, model_type, session_id)
+                except ValueError as e:
+                    return render_template("modeling.html", error=str(e), session_id=session_id)
 
             return render_template("modeling.html", results=results, session_id=session_id, input_info=input_info)
         
@@ -127,12 +129,16 @@ def model():
             df = pd.read_csv(path)
             model = joblib.load(model_path)
 
-            input_data = {col: request.form.get(col) for col in df.columns}
+            target_path = session_dir / "target.txt"
+            target = target_path.read_text().strip()
+            dfx = df.drop(columns=[target])
+
+            input_data = {col: request.form.get(col) for col in dfx.columns}
             if None in input_data.values():
                 return render_template("modeling.html", error="Please insert a value for each input feature")
 
-            result = test_model(df, model, input_data)
-            return render_template("modeling.html", result=result, session_id=session_id)
+            result, row_list, feature_names = test_model(dfx, model, input_data)
+            return render_template("modeling.html", result=result, row_list=row_list, feature_names=feature_names, session_id=session_id, target=target)
     else:
         return render_template("modeling.html")
 
