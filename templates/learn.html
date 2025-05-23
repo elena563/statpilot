@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+
+{% block main %}
+
+    <main class="relative overflow-hidden bg-gradient-to-b from-gray-100 to-white pt-12 mb-8">
+        <div class="bg-white w-full px-4 sm:px-6 lg:px-8 py-12 md:py-20">
+            <div class="text-center">
+                <h2 class="text-3xl md:text-3xl font-bold tech-dark-purple mb-6 animate-fade-in">
+                    Discover what's behind!
+                </h2>
+                <p class="text-m md:text-m text-gray-600 max-w-3xl mx-auto mb-8 animate-fade-in" style="animation-delay: 0.2s;">
+                    In this page, you can find some info to get deeper with your knowledge of data analysis, machine learning, and explainable AI.
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <section class="my-6 flex flex-col items-center">
+        <h3 class="text-2xl font-bold text-center my-4">Data Analysis</h3>
+        <p class="text-s md:text-s max-w-4xl mx-auto">Data analysis, at its core, is the process of inspecting, cleansing, transforming, and modeling data with the goal of discovering useful information, informing conclusions, and supporting decision-making. In an era where data is generated at an unprecedented pace – from financial transactions and social media interactions to scientific experiments and sensor readings – the ability to extract meaningful insights from this deluge has become a critical skill for businesses, researchers, and policymakers alike. It's more than just crunching numbers; it's about storytelling with data, identifying patterns, uncovering anomalies, and predicting future trends.</p>
+        <br/><p class="text-s md:text-s max-w-4xl mx-auto">The journey of data analysis typically begins with data collection, which can involve various methods depending on the source, such as web scraping, database queries, API integrations, or manual entry. This raw data is often messy, incomplete, and inconsistent, necessitating a crucial step known as data cleaning or wrangling. This involves handling missing values, correcting errors, removing duplicates, and standardizing formats to ensure data quality and reliability. Without clean data, any subsequent analysis risks producing misleading or inaccurate results.</p>
+        <br/><p class="text-s md:text-s max-w-4xl mx-auto">Once the data is clean, exploratory data analysis (EDA) comes into play. EDA uses statistical summaries and graphical representations – like histograms, scatter plots, box plots, and heatmaps – to visualize the data's structure, identify relationships between variables, detect outliers, and gain initial insights. This phase is iterative and highly interactive, guiding the analyst to formulate hypotheses and select appropriate analytical techniques. For instance, a scatter plot might reveal a strong correlation between two variables, suggesting a potential causal link that warrants further investigation.</p>
+        <br/><p class="text-s md:text-s max-w-4xl mx-auto">Beyond exploration, data analysis encompasses a wide array of techniques, broadly categorized into descriptive, diagnostic, predictive, and prescriptive analytics. Descriptive analytics focuses on summarizing past events and trends, answering "what happened?" For example, calculating average sales figures or identifying the most popular products in a given period. Diagnostic analytics delves deeper, seeking to understand "why did it happen?" This often involves root cause analysis, drilling down into specific data points to uncover the underlying reasons for observed phenomena.</p>
+        <br/><p class="text-s md:text-s max-w-4xl mx-auto">Predictive analytics, perhaps the most sought-after form, aims to forecast future outcomes based on historical data, answering "what will happen?" This is where statistical modeling, regression analysis, and time series forecasting come into their own. For example, predicting customer churn, stock prices, or disease outbreaks. Finally, prescriptive analytics takes it a step further, suggesting optimal courses of action to influence future outcomes, answering "what should I do?" This often involves optimization algorithms and simulation models to recommend specific strategies, such as optimizing supply chains or personalizing marketing campaigns.</p>
+        <br/><p class="text-s md:text-s max-w-4xl mx-auto">The tools employed in data analysis are diverse, ranging from powerful programming languages like Python (with libraries such as Pandas, NumPy, Matplotlib, and Seaborn) and R, to specialized statistical software like SAS and SPSS, and user-friendly business intelligence (BI) tools like Tableau and Power BI. The choice of tool often depends on the complexity of the analysis, the size of the dataset, and the analyst's skill set.</p>
+    </section>
+    <section class="bg-white my-6 flex flex-col items-center">
+        <h3 class="text-2xl font-bold text-center my-4">Machine Learning</h3>
+    </section>
+
+{% endblock %}

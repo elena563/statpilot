@@ -208,11 +208,9 @@ def download_model():
 
     return send_file(path, as_attachment=True, download_name=filename)
 
-@app.route('/download/<path:filename>')
-def download_file(filename):
-    return send_from_directory(directory=os.path.dirname(filename),
-                               filename=os.path.basename(filename),
-                               as_attachment=True)
+@app.route("/learn")
+def learn():
+    return render_template("learn.html")
 
 if __name__ == '__main__':
     with app.app_context():

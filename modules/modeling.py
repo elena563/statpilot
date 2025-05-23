@@ -42,7 +42,7 @@ def train_model(df, target, model_type, session_id):
             model = DecisionTreeClassifier() 
             task = 'classif'
     if task != target_type:
-        raise ValueError(f"Modello '{model_type}' non supportato per target {target}")
+        raise ValueError(f"Modello '{model_type}' non supportato per target '{target}'")
 
 
     model.fit(X_train, y_train)
