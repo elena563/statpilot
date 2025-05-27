@@ -21,7 +21,7 @@
             <input type="hidden" name="session_id" value="{{ session_id }}">
             <input type="hidden" name="form_type" value="train_form">
             {% if not columns %}
-                <input type="file" name="dataset" required>
+                <input type="file" name="dataset" accept=".csv" required>
             {% endif %}
 
             {% if columns %}
@@ -76,8 +76,8 @@
 
             <p class="mt-6 mb-2">Click here to download your model in pickle format or your test set csv!</p>
             <div class="flex gap-4">
-                <a href="/download_model?session_id={{ session_id }}&file=model" class="border border-purple-500 text-purple-500 hover:bg-purple-50 px-8 py-2 rounded-md font-medium">Download model</a>
-                <a href="/download_model?session_id={{ session_id }}&file=xtest" class="border border-purple-500 text-purple-500 hover:bg-purple-50 px-8 py-2 rounded-md font-medium">Download test set</a>
+                <a href="/download?session_id={{ session_id }}&file=model" class="border border-purple-500 text-purple-500 hover:bg-purple-50 px-8 py-2 rounded-md font-medium">Download model</a>
+                <a href="/download?session_id={{ session_id }}&file=xtest" class="border border-purple-500 text-purple-500 hover:bg-purple-50 px-8 py-2 rounded-md font-medium">Download test set</a>
             </div>
         </section>
 

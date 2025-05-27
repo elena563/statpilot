@@ -69,6 +69,13 @@ def analyze():
         file = request.files['dataset']
         if not file:
             return render_template("analysis.html", error='No file submitted')
+        
+        # file extension check
+        filename = file.filename
+        _, file_ext = os.path.splitext(filename)
+        if file_ext.lower() != '.csv':
+            return render_template("explainability.html", error='dataset file must be a CSV (.csv)')
+
         results = analyze_csv(file)
         return render_template("analysis.html", results=results)
     else:
@@ -90,6 +97,13 @@ def model():
                 file = request.files['dataset']
                 if not file:
                     return render_template("modeling.html", error='No file submitted')
+                
+                # file extension check
+                filename = file.filename
+                _, file_ext = os.path.splitext(filename)
+                if file_ext.lower() != '.csv':
+                    return render_template("explainability.html", error='dataset file must be a CSV (.csv)')
+
                 # temporary save dataset to pass it to the form
                 session_dir = get_session_dir()  
 
@@ -154,6 +168,16 @@ def explain():
             model_file = request.files['model']
             if not xtest_file or not model_file:
                 return render_template("explainability.html", error='No file submitted')
+            
+            # files extensions check
+            xtest_filename = xtest_file.filename
+            _, xtest_ext = os.path.splitext(xtest_filename)
+            if xtest_ext.lower() != '.csv':
+                return render_template("explainability.html", error='xtest file must be a CSV (.csv)')
+            model_filename = model_file.filename
+            _, model_ext = os.path.splitext(model_filename)
+            if model_ext.lower() != '.pkl':
+                return render_template("explainability.html", error='model file must be a Pickle (.pkl)')
 
             # temporary save dataset and model to pass them to the form
             session_dir = get_session_dir()  
@@ -190,8 +214,8 @@ def explain():
         return render_template("explainability.html")
 
 
-@app.route("/download_model")
-def download_model():
+@app.route("/download")
+def download():
     session_id = request.args.get('session_id')
     file = request.args.get('file') 
     if not session_id:

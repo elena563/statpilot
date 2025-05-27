@@ -21,10 +21,10 @@
             <input type="hidden" name="form_type" value="global_form">
             <input type="hidden" name="session_id" value="{{ session_id }}">
             <label for="dataset">Upload your X test set (.csv):</label>
-            <input type="file" name="xtest" id="xtest" required>
+            <input type="file" name="xtest" id="xtest" accept=".csv" required>
 
             <label for="model">Upload your model (.pkl):</label>
-            <input type="file" name="model" id="model" required>
+            <input type="file" name="model" id="model" accept=".pkl" required>
             <button type="submit" class="bg-purple-500 hover:bg-purple-600 text-white px-8 py-2 rounded-md font-medium">Explain</button>
         </form>
     </main>
