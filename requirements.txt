@@ -5,5 +5,5 @@ seaborn
 matplotlib
 wordcloud
 shap
+scikit-learn
 flask
-sklearn
