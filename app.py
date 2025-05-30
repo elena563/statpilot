@@ -1,6 +1,6 @@
 import os
 import shutil
-from flask import Flask, render_template, request, send_from_directory, send_file
+from flask import Flask, render_template, request, send_file
 import joblib
 import pandas as pd
 from pathlib import Path
@@ -13,7 +13,6 @@ from modules.explainability import explain_global, explain_local
 # configure application
 app = Flask(__name__)
 app.debug = True
-app.secret_key = "sT4tz42!mylittlesecret"   # dev server key
 
 # prevent caching
 @app.after_request
@@ -235,8 +234,3 @@ def download():
 @app.route("/learn")
 def learn():
     return render_template("learn.html")
-
-if __name__ == '__main__':
-    with app.app_context():
-        init_cleanup()
-    app.run(debug=True)

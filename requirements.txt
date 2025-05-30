@@ -1,0 +1,9 @@
+gunicorn
+nltk
+pandas
+seaborn
+matplotlib
+wordcloud
+shap
+flask
+sklearn
