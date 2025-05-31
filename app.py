@@ -150,7 +150,7 @@ def model():
             if None in input_data.values():
                 return render_template("modeling.html", error="Please insert a value for each input feature")
 
-            result, row_list, feature_names = test_model(dfx, model, input_data)
+            result, row_list, feature_names = test_model(dfx, model, input_data, session_id)
             return render_template("modeling.html", result=result, row_list=row_list, feature_names=feature_names, session_id=session_id, target=target)
     else:
         return render_template("modeling.html")
@@ -234,3 +234,8 @@ def download():
 @app.route("/learn")
 def learn():
     return render_template("learn.html")
+
+if __name__ == "__main__":
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)

@@ -12,6 +12,8 @@ def train_model(df, target, model_type, session_id):
 
     X = df.drop(columns=[target])
     X = pd.get_dummies(X)
+    X_columns = X.columns.tolist()
+    joblib.dump(X_columns, Path("static") / "temp" / session_id / "columns.pkl")
     y = df[target]
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -84,17 +86,23 @@ def train_model(df, target, model_type, session_id):
 
     return results, input_info
 
-def test_model(dfx, model, input_data):
+def test_model(dfx, model, input_data, session_id):
 
     input_series = pd.Series(input_data)
     X = input_series.to_frame().T
 
     X = X.astype(dfx.dtypes.to_dict())
     X = pd.get_dummies(X)
+    columns = joblib.load(Path("static") / "temp" / session_id / "columns.pkl")
+
+    for col in columns:
+        if col not in X.columns:
+            X[col] = 0
+
+    X = X[columns]
     y_pred = model.predict(X)
     feature_names = list(dfx.columns)
-    row = X.iloc[0].values.reshape(1, -1)
-    row_list = row.flatten().tolist()
+    row_list = list(input_data.values())
     y_pred2 = y_pred[0]
 
     return y_pred2, row_list, feature_names

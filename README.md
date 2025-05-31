@@ -1,6 +1,6 @@
 # StatPilot
 
-This is my final project for CS50x course. It's an interactive web application for statistical data analysis, machine learning modeling, and model explainability — built with Flask and Python.
+Description: This is my final project for CS50x course. It's an interactive web application for statistical data analysis, machine learning modeling, and model explainability — built with Flask and Python.
 
 ## Features
 
@@ -33,9 +33,11 @@ This is my final project for CS50x course. It's an interactive web application f
 
 ## User Interface
 
-**Access the app here**: [coming-soon](coming soon)
+**Access the app [here](https://statpilot.onrender.com/)** 
 
 No installation required — just open the app and start exploring your data.
+Due to render free limitations, it could take a few minutes to load.
+VIDEO DEMO (for course submission): https://youtu.be/deRl0LRDJKQ
 
 ## Usage
 
