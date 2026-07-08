@@ -7,6 +7,9 @@ from pathlib import Path
 import time
 import re
 import threading
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from modules.analysis import analyze_csv, get_session_dir, read_csv_sep
 from modules.modeling import train_model, test_model
 from modules.explainability import explain_global, explain_local
@@ -202,7 +205,18 @@ def explain():
             model_file.save(model_path)
 
             X_test = pd.read_csv(X_path)
-            model = joblib.load(model_file.stream) 
+            model = joblib.load(model_path) 
+
+            # temporary pickle validation
+            ALLOWED_MODELS = (
+                RandomForestClassifier, RandomForestRegressor,
+                LogisticRegression, LinearRegression,
+                DecisionTreeClassifier, DecisionTreeRegressor,
+                GradientBoostingClassifier, GradientBoostingRegressor,
+            )
+
+            if not isinstance(model, ALLOWED_MODELS):
+                return render_template("modeling.html", error="The uploaded model is not supported. Please upload a valid model.")
 
             summary_plot = explain_global(model, X_test)
             return render_template("explainability.html", summary_plot=summary_plot, session_id=session_id)

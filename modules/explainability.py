@@ -27,12 +27,14 @@ def setup_explainer(model, X_test):
         explainer = shap.LinearExplainer(model, X_test_prep)
     elif model_type in ['RandomForestClassifier', 'GradientBoostingRegressor', 'DecisionTreeClassifier']:
         explainer = shap.TreeExplainer(model)
-    shap_values = explainer(X_test_prep)
+    else:
+        explainer = shap.KernelExplainer(model, X_test_prep) # warning: slow
 
-    return shap_values, X_test_prep, explainer
+    return X_test_prep, explainer
 
 def explain_global(model, X_test):
-    shap_values, X_test_prep, _ = setup_explainer(model, X_test)
+    X_test_prep, explainer = setup_explainer(model, X_test)
+    shap_values = explainer(X_test_prep)
 
     shap.summary_plot(shap_values, X_test_prep)
 
@@ -44,7 +46,8 @@ def explain_global(model, X_test):
     return path
 
 def explain_local(obs_index, model, X_test):
-    shap_values, X_test_prep, explainer = setup_explainer(model, X_test)
+    X_test_prep, explainer = setup_explainer(model, X_test)
+    shap_values = explainer(X_test_prep)
 
     plots = []
     session_dir = get_session_dir()
