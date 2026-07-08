@@ -9,10 +9,12 @@ import threading
 from modules.analysis import analyze_csv, get_session_dir, read_csv_sep
 from modules.modeling import train_model, test_model
 from modules.explainability import explain_global, explain_local
+from dotenv import load_dotenv
 
-# configure application
+load_dotenv()
+
 app = Flask(__name__)
-app.debug = True
+debug = os.environ.get('DEBUG') == 'True'
 
 # prevent caching
 @app.after_request
@@ -25,7 +27,7 @@ def after_request(response):
 
 # clean temporary directories
 def cleanup_temp_dirs(max_age_hours=24):
-    temp_dir = os.path.join("static", "temp")
+    temp_dir = os.path.join("temp")
     if not os.path.exists(temp_dir):
         return
         
@@ -47,7 +49,7 @@ def schedule_cleanup(interval_hours=12):
         time.sleep(interval_hours * 3600)
 
 def init_cleanup():
-    os.makedirs(os.path.join("static", "temp"), exist_ok=True)
+    os.makedirs(os.path.join("temp"), exist_ok=True)
     
     # clean at start
     cleanup_temp_dirs()
@@ -117,7 +119,7 @@ def model():
             
             elif 'target' in request.form:
                 session_id = request.form.get('session_id')  # prendi l'id inviato
-                session_dir = Path("static") / "temp" / session_id
+                session_dir = Path("temp") / session_id
                 path = session_dir / "dataset.csv"
                 df = pd.read_csv(path)
                 model_path = session_dir / "model.pkl"
@@ -134,7 +136,7 @@ def model():
         
         elif form_type == 'test_form':
             session_id = request.form.get("session_id")
-            session_dir = Path("static") / "temp" / session_id
+            session_dir = Path("temp") / session_id
 
             path = session_dir / "dataset.csv"
             model_path = session_dir / "model.pkl"
@@ -196,8 +198,8 @@ def explain():
         
         elif form_type == 'local_form':
             session_id = request.form.get("session_id")
-            X_test = pd.read_csv(f"static/temp/{session_id}/xtest.csv")
-            model = joblib.load(f"static/temp/{session_id}/model.pkl")
+            X_test = pd.read_csv(f"temp/{session_id}/xtest.csv")
+            model = joblib.load(f"temp/{session_id}/model.pkl")
 
             obs_index = int(request.form.get("obs"))
             row = X_test.iloc[obs_index].values.reshape(1, -1)
@@ -225,7 +227,7 @@ def download():
     elif file == 'xtest':
         filename = "xtest.csv"
 
-    path = Path("static") / "temp" / session_id / filename
+    path = Path("temp") / session_id / filename
     if not path.exists():
         return "File not found", 404
 
@@ -238,4 +240,4 @@ def learn():
 if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=debug)

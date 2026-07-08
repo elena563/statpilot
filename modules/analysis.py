@@ -1,6 +1,7 @@
 import os
 from collections import Counter
 import math
+import nltk
 from nltk.corpus import stopwords
 import pandas as pd
 from pathlib import Path
@@ -11,9 +12,11 @@ import matplotlib
 matplotlib.use('Agg')  # backup setting for web application
 from matplotlib import pyplot as plt
 
+nltk.download('stopwords')
+
 def get_session_dir():
     session_id = str(uuid.uuid4())
-    session_dir = Path("static") / "temp" / session_id
+    session_dir = Path("temp") / session_id
     os.makedirs(session_dir, exist_ok=True)
     return session_dir
 
@@ -195,6 +198,11 @@ def analyze_csv(file):
     cat_cols = df.select_dtypes(include="object").columns.tolist()
     text_cols = [col for col in cat_cols if is_text(df[col])]
     qual_cols = [col for col in cat_cols if col not in text_cols]
+
+    print(f"Numerical columns: {num_cols}")
+    print(f"Categorical columns: {qual_cols}")
+    print(f"Text columns: {text_cols}")
+    print(f"qual_cols: {qual_cols}")
 
     # get stats based on column types
     results={}

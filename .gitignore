@@ -1,5 +1,7 @@
-static/temp/*
+temp/*
 __pycache__/*
 modules/__pycache__/*
 *.pptx
 *.mp4
+.venv/*
+*.env

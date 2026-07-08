@@ -23,11 +23,13 @@ Description: This is my final project for CS50x course. It's an interactive web 
 │
 ├── app.py      # Main Flask app
 ├── templates/  # HTML pages
-├── static/     # CSS, JS, temp folder for datasets/plots
+├── static/     # CSS, JS
+├── temp/       # Temporary folder for datasets and plots (not visible in repo)  
 ├── modules/ 
 │ ├── analysis.py
 │ ├── modeling.py
 │ └── explainability.py
+├── requirements.txt  
 └── README.md
 ```
 
@@ -47,7 +49,7 @@ VIDEO DEMO (for course submission): https://youtu.be/deRl0LRDJKQ
 
 ## Notes
 
-- Your data is not stored or shared.
+- Your data is not stored or shared at the moment.
 - Categorical, numerical, and textual data are automatically detected and analyzed accordingly.
 - Ensure your data are clean and correctly decoded to help the tool doing proper analysis.
 - At the moment the app does not support time series analysis and all datetime columns are dropped. Coming soon!

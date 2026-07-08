@@ -7,3 +7,4 @@ wordcloud
 shap
 scikit-learn
 flask
+python-dotenv
