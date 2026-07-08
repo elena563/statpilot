@@ -13,7 +13,7 @@ def train_model(df, target, model_type, session_id):
     X = df.drop(columns=[target])
     X = pd.get_dummies(X)
     X_columns = X.columns.tolist()
-    joblib.dump(X_columns, Path("static") / "temp" / session_id / "columns.pkl")
+    joblib.dump(X_columns, Path("temp") / session_id / "columns.pkl")
     y = df[target]
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -66,10 +66,10 @@ def train_model(df, target, model_type, session_id):
         results['Recall'] = round(recall_score(y_test, y_pred, average='weighted'), 3)
         results['F1'] = round(f1_score(y_test, y_pred, average='weighted'), 3)
 
-    path = Path("static") / "temp" / session_id / "model.pkl"
+    path = Path("temp") / session_id / "model.pkl"
     joblib.dump(model, path)
 
-    path = Path("static") / "temp" / session_id / "xtest.csv"
+    path = Path("temp") / session_id / "xtest.csv"
     X_test.to_csv(path, index=False)
 
     dfx = df.drop(columns=[target])
@@ -93,7 +93,7 @@ def test_model(dfx, model, input_data, session_id):
 
     X = X.astype(dfx.dtypes.to_dict())
     X = pd.get_dummies(X)
-    columns = joblib.load(Path("static") / "temp" / session_id / "columns.pkl")
+    columns = joblib.load(Path("temp") / session_id / "columns.pkl")
 
     for col in columns:
         if col not in X.columns:

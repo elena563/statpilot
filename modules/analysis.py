@@ -166,7 +166,11 @@ def analyze_text(df, text_cols, session_dir):
         plots.append(path)
 
     # word frequency plot
-    labels, values = zip(*common)
+    if not common:
+        labels, values = [], []
+        return stats, plots
+    else:
+        labels, values = zip(*common)
     plt.barh(labels, values, color='lightblue', edgecolor='black')
     plt.title("Top 20 most frequent words")
     plt.tight_layout()
@@ -176,13 +180,14 @@ def analyze_text(df, text_cols, session_dir):
     plots.append(path)
 
     # wordcloud plot
-    cloud = WordCloud(width=800, height=500, background_color='white').generate(text)
-    plt.imshow(cloud, interpolation='bilinear')
-    plt.axis('off')
-    path = str(Path(session_dir) / "wordcloud.png").replace('\\', '/')
-    plt.savefig(path)
-    plt.close()
-    plots.append(path)
+    if text.strip():
+        cloud = WordCloud(width=800, height=500, background_color='white').generate(text)
+        plt.imshow(cloud, interpolation='bilinear')
+        plt.axis('off')
+        path = str(Path(session_dir) / "wordcloud.png").replace('\\', '/')
+        plt.savefig(path)
+        plt.close()
+        plots.append(path)
 
     return stats, plots
 

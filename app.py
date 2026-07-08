@@ -5,6 +5,7 @@ import joblib
 import pandas as pd
 from pathlib import Path
 import time
+import re
 import threading
 from modules.analysis import analyze_csv, get_session_dir, read_csv_sep
 from modules.modeling import train_model, test_model
@@ -67,7 +68,7 @@ def index():
 @app.route("/analyze", methods=["GET", "POST"])
 def analyze():
     if request.method == 'POST':
-        file = request.files['dataset']
+        file = request.files.get('dataset')
         if not file:
             return render_template("analysis.html", error='No file submitted')
         
@@ -75,7 +76,7 @@ def analyze():
         filename = file.filename
         _, file_ext = os.path.splitext(filename)
         if file_ext.lower() != '.csv':
-            return render_template("explainability.html", error='dataset file must be a CSV (.csv)')
+            return render_template("analysis.html", error='dataset file must be a CSV (.csv)')
 
         results = analyze_csv(file)
         return render_template("analysis.html", results=results)
@@ -103,7 +104,7 @@ def model():
                 filename = file.filename
                 _, file_ext = os.path.splitext(filename)
                 if file_ext.lower() != '.csv':
-                    return render_template("explainability.html", error='dataset file must be a CSV (.csv)')
+                    return render_template("modeling.html", error='dataset file must be a CSV (.csv)')
 
                 # temporary save dataset to pass it to the form
                 session_dir = get_session_dir()  
@@ -118,7 +119,12 @@ def model():
                 return render_template("modeling.html", columns=columns, session_id=session_id)
             
             elif 'target' in request.form:
-                session_id = request.form.get('session_id')  # prendi l'id inviato
+                session_id = request.form.get('session_id')
+                if not session_id:
+                    return render_template("modeling.html", error="Missing session ID")
+                if not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', session_id or ""):
+                    return render_template("modeling.html", error="Not a valid session ID")
+
                 session_dir = Path("temp") / session_id
                 path = session_dir / "dataset.csv"
                 df = pd.read_csv(path)
@@ -136,6 +142,11 @@ def model():
         
         elif form_type == 'test_form':
             session_id = request.form.get("session_id")
+            if not session_id:
+                return render_template("modeling.html", error="Missing session ID")
+            if not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', session_id or ""):
+                    return render_template("modeling.html", error="Not a valid session ID")
+
             session_dir = Path("temp") / session_id
 
             path = session_dir / "dataset.csv"
@@ -165,8 +176,8 @@ def explain():
         form_type = request.form.get("form_type")
         
         if form_type == 'global_form':
-            xtest_file = request.files['xtest']
-            model_file = request.files['model']
+            xtest_file = request.files.get('xtest')
+            model_file = request.files.get('model')
             if not xtest_file or not model_file:
                 return render_template("explainability.html", error='No file submitted')
             
@@ -198,10 +209,19 @@ def explain():
         
         elif form_type == 'local_form':
             session_id = request.form.get("session_id")
+            if not session_id:
+                return render_template("modeling.html", error="Missing session ID")
+            if not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', session_id or ""):
+                return render_template("modeling.html", error="Not a valid session ID")
+
             X_test = pd.read_csv(f"temp/{session_id}/xtest.csv")
             model = joblib.load(f"temp/{session_id}/model.pkl")
 
-            obs_index = int(request.form.get("obs"))
+            try:
+                obs_index = int(request.form.get("obs"))
+            except (TypeError, ValueError):
+                return render_template("explainability.html", error="Observation index must be an integer")
+
             row = X_test.iloc[obs_index].values.reshape(1, -1)
             y_pred = model.predict(row)
             feature_names = list(X_test.columns)
@@ -218,9 +238,12 @@ def explain():
 @app.route("/download")
 def download():
     session_id = request.args.get('session_id')
-    file = request.args.get('file') 
     if not session_id:
         return "Missing session ID", 400
+    if not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', session_id or ""):
+        return "Not a valid session ID", 400
+    
+    file = request.args.get('file') 
     
     if file == 'model':
         filename = "model.pkl"
