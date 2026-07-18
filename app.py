@@ -20,6 +20,14 @@ load_dotenv()
 app = Flask(__name__)
 debug = os.environ.get('DEBUG') == 'True'
 
+@app.errorhandler(404)
+def not_found(e):
+    return render_template("error.html", error="Page not found", code=404), 404
+
+@app.errorhandler(500)
+def server_error(e):
+    return render_template("error.html", error="Internal server error", code=500), 500
+
 # prevent caching
 @app.after_request
 def after_request(response):
@@ -70,31 +78,37 @@ def index():
 
 @app.route("/analyze", methods=["GET", "POST"])
 def analyze():
-    if request.method == 'POST':
-        file = request.files.get('dataset')
-        if not file:
-            return render_template("analysis.html", error='No file submitted')
-        
-        # file extension check
-        filename = file.filename
-        _, file_ext = os.path.splitext(filename)
-        if file_ext.lower() != '.csv':
-            return render_template("analysis.html", error='dataset file must be a CSV (.csv)')
+    try:
+        if request.method == 'POST':
+            file = request.files.get('dataset')
+            if not file:
+                return render_template("analysis.html", error='No file submitted')
+            
+            # file extension check
+            filename = file.filename
+            _, file_ext = os.path.splitext(filename)
+            if file_ext.lower() != '.csv':
+                return render_template("analysis.html", error='dataset file must be a CSV (.csv)')
 
-        results = analyze_csv(file)
-        return render_template("analysis.html", results=results)
-    else:
-        return render_template("analysis.html")
+            try:
+                results = analyze_csv(file)
+            except Exception as e:
+                return render_template("analysis.html", error=f"Error occurred while analyzing the dataset: {str(e)}")
+            
+            return render_template("analysis.html", results=results)
+        else:
+            return render_template("analysis.html")
+    except Exception as e:
+        return render_template("error.html", error=str(e), code=500)
 
 
 @app.route("/model", methods=["GET", "POST"])
 def model():
 
-    session_dir = get_session_dir()
-    path = session_dir / "dataset.csv"
-    form_type = request.form.get("form_type")
-
     if request.method == 'POST':
+        session_dir = get_session_dir()
+        path = session_dir / "dataset.csv"
+        form_type = request.form.get("form_type")
 
         if form_type == 'train_form':
 
@@ -115,7 +129,14 @@ def model():
                 session_id = session_dir.name
 
                 path = session_dir / "dataset.csv"
-                df = read_csv_sep(file) 
+
+                try:
+                    df = pd.read_csv(file)
+                except pd.errors.ParserError:
+                    return render_template("modeling.html", error="The CSV file is not readable, please check the format")
+                except UnicodeDecodeError:
+                    return render_template("modeling.html", error="Unsupported encoding, please save the CSV in UTF-8")
+                
                 df.to_csv(path, index=False)
                 
                 columns = df.columns.to_list()
@@ -130,7 +151,14 @@ def model():
 
                 session_dir = Path("temp") / session_id
                 path = session_dir / "dataset.csv"
-                df = pd.read_csv(path)
+
+                try:
+                    df = pd.read_csv(path)
+                except pd.errors.ParserError:
+                    return render_template("modeling.html", error="The CSV file is not readable, please check the format")
+                except UnicodeDecodeError:
+                    return render_template("modeling.html", error="Unsupported encoding, please save the CSV in UTF-8")
+
                 model_path = session_dir / "model.pkl"
 
                 model_type = request.form.get('model')
@@ -138,8 +166,8 @@ def model():
                 (session_dir / "target.txt").write_text(target)
                 try:
                     results, input_info = train_model(df, target, model_type, session_id)
-                except ValueError as e:
-                    return render_template("modeling.html", error=str(e), session_id=session_id)
+                except Exception as e:
+                    return render_template("modeling.html", error=f"Error occurred while training the model: {str(e)}")
 
             return render_template("modeling.html", results=results, session_id=session_id, input_info=input_info)
         
@@ -155,7 +183,13 @@ def model():
             path = session_dir / "dataset.csv"
             model_path = session_dir / "model.pkl"
 
-            df = pd.read_csv(path)
+            try:
+                df = pd.read_csv(path)
+            except pd.errors.ParserError:
+                return render_template("modeling.html", error="The CSV file is not readable, please check the format")
+            except UnicodeDecodeError:
+                return render_template("modeling.html", error="Unsupported encoding, please save the CSV in UTF-8")
+
             model = joblib.load(model_path)
 
             target_path = session_dir / "target.txt"
@@ -165,8 +199,12 @@ def model():
             input_data = {col: request.form.get(col) for col in dfx.columns}
             if None in input_data.values():
                 return render_template("modeling.html", error="Please insert a value for each input feature")
-
-            result, row_list, feature_names = test_model(dfx, model, input_data, session_id)
+            
+            try:
+                result, row_list, feature_names = test_model(dfx, model, input_data, session_id)
+            except Exception as e:
+                return render_template("modeling.html", error=f"Error occurred while testing the model: {str(e)}")
+            
             return render_template("modeling.html", result=result, row_list=row_list, feature_names=feature_names, session_id=session_id, target=target)
     else:
         return render_template("modeling.html")
@@ -204,8 +242,15 @@ def explain():
             xtest_file.save(X_path)
             model_file.save(model_path)
 
-            X_test = pd.read_csv(X_path)
-            model = joblib.load(model_path) 
+            try:
+                X_test = read_csv_sep(X_path)
+            except ValueError:
+                return render_template("explainability.html", error="Can't read CSV, check the separator and encoding")
+
+            try:
+                model = joblib.load(model_path) 
+            except Exception:
+                return render_template("explainability.html", error="Error loading model")
 
             # temporary pickle validation
             ALLOWED_MODELS = (
@@ -218,7 +263,11 @@ def explain():
             if not isinstance(model, ALLOWED_MODELS):
                 return render_template("modeling.html", error="The uploaded model is not supported. Please upload a valid model.")
 
-            summary_plot = explain_global(model, X_test)
+            try:
+                summary_plot = explain_global(model, X_test)
+            except Exception as e:
+                return render_template("explainability.html", error=f"Error generating global explanation: {str(e)}")
+            
             return render_template("explainability.html", summary_plot=summary_plot, session_id=session_id)
         
         elif form_type == 'local_form':
@@ -228,8 +277,13 @@ def explain():
             if not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', session_id or ""):
                 return render_template("modeling.html", error="Not a valid session ID")
 
-            X_test = pd.read_csv(f"temp/{session_id}/xtest.csv")
-            model = joblib.load(f"temp/{session_id}/model.pkl")
+            try:
+                X_test = pd.read_csv(f"temp/{session_id}/xtest.csv")
+                model = joblib.load(f"temp/{session_id}/model.pkl")
+            except FileNotFoundError:
+                return render_template("explainability.html", error="Session expired, please upload the files again")
+            except Exception as e:
+                return render_template("explainability.html", error=f"Error loading session data: {str(e)}")
 
             try:
                 obs_index = int(request.form.get("obs"))
@@ -242,7 +296,10 @@ def explain():
             row_list = row.flatten().tolist()
             y_pred2 = y_pred[0]
 
-            plots = explain_local(obs_index, model, X_test)
+            try:
+                plots = explain_local(obs_index, model, X_test)
+            except Exception as e:
+                return render_template("explainability.html", error=f"Error generating local explanation: {str(e)}")
 
             return render_template("explainability.html", plots=plots, row_list=row_list, y_pred2=y_pred2, feature_names=feature_names)
     else:
@@ -263,6 +320,8 @@ def download():
         filename = "model.pkl"
     elif file == 'xtest':
         filename = "xtest.csv"
+    else:
+        return "Invalid file parameter", 400
 
     path = Path("temp") / session_id / filename
     if not path.exists():
@@ -273,6 +332,8 @@ def download():
 @app.route("/learn")
 def learn():
     return render_template("learn.html")
+
+init_cleanup()
 
 if __name__ == "__main__":
     import os

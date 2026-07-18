@@ -193,7 +193,13 @@ def analyze_text(df, text_cols, session_dir):
 
 def analyze_csv(file):
     session_dir = get_session_dir()
-    df = pd.read_csv(file)
+    path = session_dir / "dataset.csv"
+    file.save(path) 
+    try:
+        df = read_csv_sep(file)
+    except ValueError:
+        raise ValueError("Can't read CSV, check the separator and encoding")
+
     cols = [col for col in df.columns if 'date' not in col.lower()]
     df= df[cols]
     print(df.dtypes)
