@@ -14,6 +14,7 @@ from modules.analysis import analyze_csv, get_session_dir, read_csv_sep
 from modules.modeling import train_model, test_model
 from modules.explainability import explain_global, explain_local
 from dotenv import load_dotenv
+from variables import TEMP_DIR, CLEANUP_MAX_AGE_HOURS, CLEANUP_INTERVAL_HOURS
 
 load_dotenv()
 
@@ -38,8 +39,8 @@ def after_request(response):
     return response
 
 # clean temporary directories
-def cleanup_temp_dirs(max_age_hours=24):
-    temp_dir = os.path.join("temp")
+def cleanup_temp_dirs(max_age_hours=CLEANUP_MAX_AGE_HOURS):
+    temp_dir = os.path.join(TEMP_DIR)
     if not os.path.exists(temp_dir):
         return
         
@@ -55,13 +56,13 @@ def cleanup_temp_dirs(max_age_hours=24):
                 except Exception as e:
                     print(f"Error removing {dir_path}: {e}")
 
-def schedule_cleanup(interval_hours=12):
+def schedule_cleanup(interval_hours=CLEANUP_INTERVAL_HOURS):
     while True:
         cleanup_temp_dirs()
         time.sleep(interval_hours * 3600)
 
 def init_cleanup():
-    os.makedirs(os.path.join("temp"), exist_ok=True)
+    os.makedirs(os.path.join(TEMP_DIR), exist_ok=True)
     
     # clean at start
     cleanup_temp_dirs()
@@ -149,7 +150,7 @@ def model():
                 if not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', session_id or ""):
                     return render_template("modeling.html", error="Not a valid session ID")
 
-                session_dir = Path("temp") / session_id
+                session_dir = Path(TEMP_DIR) / session_id
                 path = session_dir / "dataset.csv"
 
                 try:
@@ -178,7 +179,7 @@ def model():
             if not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', session_id or ""):
                     return render_template("modeling.html", error="Not a valid session ID")
 
-            session_dir = Path("temp") / session_id
+            session_dir = Path(TEMP_DIR) / session_id
 
             path = session_dir / "dataset.csv"
             model_path = session_dir / "model.pkl"
@@ -323,7 +324,7 @@ def download():
     else:
         return "Invalid file parameter", 400
 
-    path = Path("temp") / session_id / filename
+    path = Path(TEMP_DIR) / session_id / filename
     if not path.exists():
         return "File not found", 404
 

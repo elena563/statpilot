@@ -7,16 +7,15 @@ from sklearn.linear_model import LinearRegression, ElasticNet, LogisticRegressio
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_error, precision_score, r2_score, recall_score, root_mean_squared_error
 from sklearn.model_selection import train_test_split
+from variables import TEST_SIZE, RANDOM_STATE, TEMP_DIR
 
 def train_model(df, target, model_type, session_id):
 
     X = df.drop(columns=[target])
     X = pd.get_dummies(X)
     X_columns = X.columns.tolist()
-    joblib.dump(X_columns, Path("temp") / session_id / "columns.pkl")
+    joblib.dump(X_columns, Path(TEMP_DIR) / session_id / "columns.pkl")
     y = df[target]
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     if y.dtype == 'object' or pd.api.types.is_categorical_dtype(y):
         target_type = 'classif'
@@ -44,8 +43,11 @@ def train_model(df, target, model_type, session_id):
             model = DecisionTreeClassifier() 
             task = 'classif'
     if task != target_type:
-        raise ValueError(f"Modello '{model_type}' non supportato per target '{target}'")
+        raise ValueError(f"Model '{model_type}' not suitable for target '{target}'")
 
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y if task == 'classif' else None
+    )
 
     model.fit(X_train, y_train)
 
@@ -66,10 +68,10 @@ def train_model(df, target, model_type, session_id):
         results['Recall'] = round(recall_score(y_test, y_pred, average='weighted'), 3)
         results['F1'] = round(f1_score(y_test, y_pred, average='weighted'), 3)
 
-    path = Path("temp") / session_id / "model.pkl"
+    path = Path(TEMP_DIR) / session_id / "model.pkl"
     joblib.dump(model, path)
 
-    path = Path("temp") / session_id / "xtest.csv"
+    path = Path(TEMP_DIR) / session_id / "xtest.csv"
     X_test.to_csv(path, index=False)
 
     dfx = df.drop(columns=[target])
@@ -93,7 +95,7 @@ def test_model(dfx, model, input_data, session_id):
 
     X = X.astype(dfx.dtypes.to_dict())
     X = pd.get_dummies(X)
-    columns = joblib.load(Path("temp") / session_id / "columns.pkl")
+    columns = joblib.load(Path(TEMP_DIR) / session_id / "columns.pkl")
 
     for col in columns:
         if col not in X.columns:

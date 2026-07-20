@@ -11,21 +11,49 @@ import uuid
 import matplotlib
 matplotlib.use('Agg')  # backup setting for web application
 from matplotlib import pyplot as plt
+from variables import TEMP_DIR
 
 nltk.download('stopwords')
 
 def get_session_dir():
     session_id = str(uuid.uuid4())
-    session_dir = Path("temp") / session_id
+    session_dir = Path(TEMP_DIR) / session_id
     os.makedirs(session_dir, exist_ok=True)
     return session_dir
 
-def is_text(series, threshold=20):
-    """returns True if column is text"""
-    if series.dtype != 'object':
+def is_text(series: pd.Series, score_threshold: int = 2) -> bool:
+    """
+    returns True if column is free text (needs NLP analysis), False if other
+
+    relies on: average and median length, unique values number, average number of words
+    """
+    if pd.api.types.is_numeric_dtype(series) or pd.api.types.is_datetime64_any_dtype(series):
         return False
-    lengths = series.dropna().astype(str).apply(len)
-    return lengths.mean() > threshold
+    
+    s = series.dropna().astype(str)
+    if len(s) == 0:
+        return False
+    
+    score = 0
+
+    lengths = s.apply(len)
+    if lengths.mean() > 20 or (lengths.mean() > 15 and lengths.std() > 20):
+        score += 1
+
+    cardinality_ratio = s.nunique() / len(s)
+    if cardinality_ratio > 0.5:
+        score += 1
+
+    avg_words = s.apply(lambda x: len(x.split())).mean()
+    if avg_words > 4:
+        score += 1
+
+    if lengths.median() > 20:
+        score += 1
+
+    #print(f'lengths.mean(): {lengths.mean()}, lengths.std(): {lengths.std()}, cardinality_ratio: {cardinality_ratio}, avg_words: {avg_words}, lengths.median(): {lengths.median()}, score: {score}')
+    
+    return score >= score_threshold
 
 
 
@@ -42,7 +70,7 @@ def read_csv_sep(file):
     raise ValueError("Can't recognize separator")
 
 
-def analyze_num(df, num_cols, session_dir):
+def analyze_num(df, session_dir):
     num_df = df.select_dtypes(include="number")
     # descriptive stats
     stats = num_df.describe().round(3).to_dict()
@@ -80,7 +108,7 @@ def analyze_num(df, num_cols, session_dir):
     plt.close()
     plots.append(path)
 
-    if len(num_cols) >= 2:
+    if len(cols) >= 2:
         # pairplot
         pairplot = sns.pairplot(num_df)
         figure = pairplot.figure  
