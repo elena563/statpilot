@@ -69,7 +69,7 @@
                 <div>
                     <h4 class="text-xl font-bold text-center my-4">Plots</h4>
                     {% for plot in results.numerical[1] %}
-                        <img class='image' src="{{ url_for('static', filename=plot.replace('static/', '')) }}" alt="numerical analysis plot">
+                        <img class='image' src="{{ url_for('static', filename=plot.split('static/')[-1]) }}" alt="numerical analysis plot">
                     {% endfor %}
                 </div>
             </section>
@@ -105,7 +105,7 @@
                 <div>
                     <h4 class="text-xl font-bold text-center my-4">Plots</h4>
                     {% for plot in results.categorical[1] %}
-                        <img class='image' src="{{ url_for('static', filename=plot.replace('static/', '')) }}" alt="categorical analysis plot">
+                        <img class='image' src="{{ url_for('static', filename=plot.split('static/')[-1]) }}" alt="categorical analysis plot">
                     {% endfor %}
                 </div>
             </section>
@@ -141,7 +141,7 @@
                 <div>
                     <h4 class="text-xl font-bold text-center my-4">Plots</h4>
                     {% for plot in results.text[1] %}
-                        <img class='image' src="{{ url_for('static', filename=plot.replace('static/', '')) }}" alt="text analysis plot">
+                        <img class='image' src="{{ url_for('static', filename=plot.split('static/')[-1]) }}" alt="text analysis plot">
                     {% endfor %}
                 </div>
             </section>

@@ -61,7 +61,7 @@ def has_header(file) -> bool:
         return True
 
 def read_csv_sep(file) -> pd.DataFrame:
-    seps = [',', ';', '\t', '|', '\s+']
+    seps = [',', ';', '\t', '|', r'\s+']
     file.seek(0)
     header = has_header(file)
 

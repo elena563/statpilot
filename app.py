@@ -1,6 +1,5 @@
 import os
 from flask import Flask, render_template, request, send_file
-import joblib
 import pandas as pd
 from dotenv import load_dotenv
 
@@ -251,9 +250,8 @@ def download():
 def learn():
     return render_template("learn.html")
 
-init_cleanup()
-
 if __name__ == "__main__":
-    import os
+    init_cleanup()
+    
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=debug)
