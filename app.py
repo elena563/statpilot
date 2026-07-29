@@ -1,22 +1,13 @@
 import os
-import shutil
 from flask import Flask, render_template, request, send_file
 import joblib
 import pandas as pd
-from pathlib import Path
-import time
-import re
-import threading
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor
-from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from dotenv import load_dotenv
 
 from modules.analysis import analyze_csv, get_session_dir, read_csv_sep
 from modules.modeling import train_model, test_model
 from modules.explainability import explain_global, explain_local
-from services.session import validate_session_id, session_path
-from variables import TEMP_DIR, CLEANUP_MAX_AGE_HOURS, CLEANUP_INTERVAL_HOURS
+from services.session import validate_session_id, session_path, load_dataframe, load_model, init_cleanup
 
 load_dotenv()
 
@@ -39,40 +30,6 @@ def after_request(response):
     response.headers["Expires"] = 0
     response.headers["Pragma"] = "no-cache"
     return response
-
-# clean temporary directories
-def cleanup_temp_dirs(max_age_hours=CLEANUP_MAX_AGE_HOURS):
-    temp_dir = os.path.join(TEMP_DIR)
-    if not os.path.exists(temp_dir):
-        return
-        
-    current_time = time.time()
-    for session_dir in os.listdir(temp_dir):
-        dir_path = os.path.join(temp_dir, session_dir)
-        if os.path.isdir(dir_path):
-            dir_age = current_time - os.path.getmtime(dir_path)
-            if dir_age > (max_age_hours * 3600): 
-                try:
-                    shutil.rmtree(dir_path)
-                    print(f"Removed: {dir_path}")
-                except Exception as e:
-                    print(f"Error removing {dir_path}: {e}")
-
-def schedule_cleanup(interval_hours=CLEANUP_INTERVAL_HOURS):
-    while True:
-        cleanup_temp_dirs()
-        time.sleep(interval_hours * 3600)
-
-def init_cleanup():
-    os.makedirs(os.path.join(TEMP_DIR), exist_ok=True)
-    
-    # clean at start
-    cleanup_temp_dirs()
-    
-    # periodic cleaning
-    cleanup_thread = threading.Thread(target=schedule_cleanup)
-    cleanup_thread.daemon = True
-    cleanup_thread.start()
 
 
 @app.route("/")
@@ -109,13 +66,12 @@ def analyze():
 def model():
 
     if request.method == 'POST':
-        session_dir = get_session_dir()
-        path = session_dir / "dataset.csv"
         form_type = request.form.get("form_type")
 
         if form_type == 'train_form':
-
+            # first submit
             if 'dataset' in request.files:
+                path = session_path(session_id, "dataset.csv")
                 file = request.files['dataset']
                 if not file:
                     return render_template("modeling.html", error='No file submitted')
@@ -126,42 +82,30 @@ def model():
                 if file_ext.lower() != '.csv':
                     return render_template("modeling.html", error='dataset file must be a CSV (.csv)')
 
-                # temporary save dataset to pass it to the form
-                session_dir = get_session_dir()  
-
-                session_id = session_dir.name
-
-                path = session_dir / "dataset.csv"
-
                 try:
                     df = pd.read_csv(file)
                 except pd.errors.ParserError:
-                    return render_template("modeling.html", error="The CSV file is not readable, please check the format")
+                    raise ValueError("The CSV file is malformed, please check the file and try again.")
                 except UnicodeDecodeError:
-                    return render_template("modeling.html", error="Unsupported encoding, please save the CSV in UTF-8")
+                    raise ValueError("The CSV file has an unsupported encoding. Please save it in UTF-8.")
                 
                 df.to_csv(path, index=False)
                 
                 columns = df.columns.to_list()
                 return render_template("modeling.html", columns=columns, session_id=session_id)
             
+            # second submit
             elif 'target' in request.form:
                 session_id = validate_session_id(request.form.get('session_id'))
-                session_dir = Path(TEMP_DIR) / session_id
-                path = session_dir / "dataset.csv"
 
                 try:
-                    df = pd.read_csv(path)
-                except pd.errors.ParserError:
-                    return render_template("modeling.html", error="The CSV file is not readable, please check the format")
-                except UnicodeDecodeError:
-                    return render_template("modeling.html", error="Unsupported encoding, please save the CSV in UTF-8")
-
-                model_path = session_dir / "model.pkl"
+                    df = load_dataframe(session_id, "dataset.csv")
+                except (ValueError, FileNotFoundError) as e:
+                    return render_template("modeling.html", error=str(e))
 
                 model_type = request.form.get('model')
                 target = request.form.get('target')
-                (session_dir / "target.txt").write_text(target)
+                session_path(session_id, "target.txt").write_text(target)
                 try:
                     results, input_info = train_model(df, target, model_type, session_id)
                 except Exception as e:
@@ -171,21 +115,18 @@ def model():
         
         elif form_type == 'test_form':
             session_id = validate_session_id(request.form.get('session_id'))
-            session_dir = Path(TEMP_DIR) / session_id
-
-            path = session_dir / "dataset.csv"
-            model_path = session_dir / "model.pkl"
 
             try:
-                df = pd.read_csv(path)
-            except pd.errors.ParserError:
-                return render_template("modeling.html", error="The CSV file is not readable, please check the format")
-            except UnicodeDecodeError:
-                return render_template("modeling.html", error="Unsupported encoding, please save the CSV in UTF-8")
+                df = load_dataframe(session_id, "dataset.csv")
+            except (ValueError, FileNotFoundError) as e:
+                return render_template("modeling.html", error=str(e))
 
-            model = joblib.load(model_path)
+            try:
+                model = load_model(session_id, validate=True)
+            except (ValueError, FileNotFoundError) as e:
+                return render_template("modeling.html", error=str(e))
 
-            target_path = session_dir / "target.txt"
+            target_path = session_path(session_id, "target.txt")
             target = target_path.read_text().strip()
             dfx = df.drop(columns=[target])
 
@@ -241,21 +182,10 @@ def explain():
                 return render_template("explainability.html", error="Can't read CSV, check the separator and encoding")
 
             try:
-                model = joblib.load(model_path) 
-            except Exception:
-                return render_template("explainability.html", error="Error loading model")
-
-            # temporary pickle validation
-            ALLOWED_MODELS = (
-                RandomForestClassifier, RandomForestRegressor,
-                LogisticRegression, LinearRegression,
-                DecisionTreeClassifier, DecisionTreeRegressor,
-                GradientBoostingClassifier, GradientBoostingRegressor,
-            )
-
-            if not isinstance(model, ALLOWED_MODELS):
-                return render_template("modeling.html", error="The uploaded model is not supported. Please upload a valid model.")
-
+                model = load_model(session_id, validate=True) 
+            except (ValueError, FileNotFoundError) as e:
+                return render_template("explainability.html", error=str(e))
+            
             try:
                 summary_plot = explain_global(model, X_test)
             except Exception as e:
@@ -267,10 +197,10 @@ def explain():
             session_id = validate_session_id(request.form.get('session_id'))
 
             try:
-                X_test = pd.read_csv(f"temp/{session_id}/xtest.csv")
-                model = joblib.load(f"temp/{session_id}/model.pkl")
-            except FileNotFoundError:
-                return render_template("explainability.html", error="Session expired, please upload the files again")
+                X_test = load_dataframe(session_id, "xtest.csv")
+                model = load_model(session_id, validate=False)
+            except (ValueError, FileNotFoundError) as e:
+                return render_template("explainability.html", error=str(e))
             except Exception as e:
                 return render_template("explainability.html", error=f"Error loading session data: {str(e)}")
 
@@ -297,8 +227,11 @@ def explain():
 
 @app.route("/download")
 def download():
-    session_id = validate_session_id(request.args.get('session_id'))
-    
+    try:
+        session_id = validate_session_id(request.args.get('session_id'))
+    except ValueError as e:
+        return render_template("download.html", error=str(e))
+
     file = request.args.get('file') 
     
     if file == 'model':
