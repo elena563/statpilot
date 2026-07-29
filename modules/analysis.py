@@ -7,19 +7,15 @@ import pandas as pd
 from pathlib import Path
 import seaborn as sns
 from wordcloud import WordCloud
-import uuid
 import matplotlib
 matplotlib.use('Agg')  # backup setting for web application
 from matplotlib import pyplot as plt
-from variables import TEMP_DIR
+
+from services.session import get_session_dir
 
 nltk.download('stopwords')
 
-def get_session_dir():
-    session_id = str(uuid.uuid4())
-    session_dir = Path(TEMP_DIR) / session_id
-    os.makedirs(session_dir, exist_ok=True)
-    return session_dir
+
 
 def is_text(series: pd.Series, score_threshold: int = 2) -> bool:
     """

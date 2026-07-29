@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask
 import pandas as pd
 import joblib
 from pathlib import Path
@@ -7,14 +7,16 @@ from sklearn.linear_model import LinearRegression, ElasticNet, LogisticRegressio
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_error, precision_score, r2_score, recall_score, root_mean_squared_error
 from sklearn.model_selection import train_test_split
-from variables import TEST_SIZE, RANDOM_STATE, TEMP_DIR
+
+from services.session import session_path
+from variables import TEST_SIZE, RANDOM_STATE
 
 def train_model(df, target, model_type, session_id):
 
     X = df.drop(columns=[target])
     X = pd.get_dummies(X)
     X_columns = X.columns.tolist()
-    joblib.dump(X_columns, Path(TEMP_DIR) / session_id / "columns.pkl")
+    joblib.dump(X_columns, session_path(session_id, "columns.pkl"))
     y = df[target]
 
     if y.dtype == 'object' or pd.api.types.is_categorical_dtype(y):
@@ -68,10 +70,10 @@ def train_model(df, target, model_type, session_id):
         results['Recall'] = round(recall_score(y_test, y_pred, average='weighted'), 3)
         results['F1'] = round(f1_score(y_test, y_pred, average='weighted'), 3)
 
-    path = Path(TEMP_DIR) / session_id / "model.pkl"
+    path = session_path(session_id, "model.pkl")
     joblib.dump(model, path)
 
-    path = Path(TEMP_DIR) / session_id / "xtest.csv"
+    path = session_path(session_id, "xtest.csv")
     X_test.to_csv(path, index=False)
 
     dfx = df.drop(columns=[target])
@@ -95,7 +97,7 @@ def test_model(dfx, model, input_data, session_id):
 
     X = X.astype(dfx.dtypes.to_dict())
     X = pd.get_dummies(X)
-    columns = joblib.load(Path(TEMP_DIR) / session_id / "columns.pkl")
+    columns = joblib.load(session_path(session_id, "columns.pkl"))
 
     for col in columns:
         if col not in X.columns:

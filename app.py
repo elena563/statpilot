@@ -10,10 +10,12 @@ import threading
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from dotenv import load_dotenv
+
 from modules.analysis import analyze_csv, get_session_dir, read_csv_sep
 from modules.modeling import train_model, test_model
 from modules.explainability import explain_global, explain_local
-from dotenv import load_dotenv
+from services.session import validate_session_id, session_path
 from variables import TEMP_DIR, CLEANUP_MAX_AGE_HOURS, CLEANUP_INTERVAL_HOURS
 
 load_dotenv()
@@ -144,12 +146,7 @@ def model():
                 return render_template("modeling.html", columns=columns, session_id=session_id)
             
             elif 'target' in request.form:
-                session_id = request.form.get('session_id')
-                if not session_id:
-                    return render_template("modeling.html", error="Missing session ID")
-                if not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', session_id or ""):
-                    return render_template("modeling.html", error="Not a valid session ID")
-
+                session_id = validate_session_id(request.form.get('session_id'))
                 session_dir = Path(TEMP_DIR) / session_id
                 path = session_dir / "dataset.csv"
 
@@ -173,12 +170,7 @@ def model():
             return render_template("modeling.html", results=results, session_id=session_id, input_info=input_info)
         
         elif form_type == 'test_form':
-            session_id = request.form.get("session_id")
-            if not session_id:
-                return render_template("modeling.html", error="Missing session ID")
-            if not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', session_id or ""):
-                    return render_template("modeling.html", error="Not a valid session ID")
-
+            session_id = validate_session_id(request.form.get('session_id'))
             session_dir = Path(TEMP_DIR) / session_id
 
             path = session_dir / "dataset.csv"
@@ -272,11 +264,7 @@ def explain():
             return render_template("explainability.html", summary_plot=summary_plot, session_id=session_id)
         
         elif form_type == 'local_form':
-            session_id = request.form.get("session_id")
-            if not session_id:
-                return render_template("modeling.html", error="Missing session ID")
-            if not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', session_id or ""):
-                return render_template("modeling.html", error="Not a valid session ID")
+            session_id = validate_session_id(request.form.get('session_id'))
 
             try:
                 X_test = pd.read_csv(f"temp/{session_id}/xtest.csv")
@@ -309,11 +297,7 @@ def explain():
 
 @app.route("/download")
 def download():
-    session_id = request.args.get('session_id')
-    if not session_id:
-        return "Missing session ID", 400
-    if not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', session_id or ""):
-        return "Not a valid session ID", 400
+    session_id = validate_session_id(request.args.get('session_id'))
     
     file = request.args.get('file') 
     
@@ -324,7 +308,7 @@ def download():
     else:
         return "Invalid file parameter", 400
 
-    path = Path(TEMP_DIR) / session_id / filename
+    path = session_path(session_id, filename)
     if not path.exists():
         return "File not found", 404
 
