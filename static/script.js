@@ -34,3 +34,8 @@ if (regr){
         }
     });
 }
+
+document.querySelector('form').addEventListener('submit', function() {
+    const error = document.getElementById('error-message');
+    if (error) error.style.display = 'none';
+});

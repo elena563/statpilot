@@ -44,18 +44,35 @@ def is_text(series: pd.Series, score_threshold: int = 2) -> bool:
     if lengths.median() > 20:
         score += 1
 
-    print(f'lengths.mean(): {lengths.mean()}, lengths.std(): {lengths.std()}, cardinality_ratio: {cardinality_ratio}, avg_words: {avg_words}, lengths.median(): {lengths.median()}, score: {score}')
+    #print(f'lengths.mean(): {lengths.mean()}, lengths.std(): {lengths.std()}, cardinality_ratio: {cardinality_ratio}, avg_words: {avg_words}, lengths.median(): {lengths.median()}, score: {score}')
     
     return score >= score_threshold
 
+import csv
 
+def has_header(file) -> bool:
+    file.seek(0)
+    sample = file.read(2048).decode('utf-8', errors='ignore')
+    file.seek(0)
+    sniffer = csv.Sniffer()
+    try:
+        return sniffer.has_header(sample)
+    except csv.Error:
+        return True
 
-def read_csv_sep(file):
-    seps = [',', ';', '\t', '|']
+def read_csv_sep(file) -> pd.DataFrame:
+    seps = [',', ';', '\t', '|', '\s+']
+    file.seek(0)
+    header = has_header(file)
+
     for sep in seps:
         file.seek(0) 
         try:
-            df = pd.read_csv(file, sep=sep)
+            if header:
+                df = pd.read_csv(file, sep=sep)
+            else:
+                df = pd.read_csv(file, sep=sep, header=None)
+                df.columns = [f"col_{i}" for i in df.columns] 
             if df.shape[1] > 1:  # more than one column
                 return df
         except Exception:
@@ -63,8 +80,8 @@ def read_csv_sep(file):
     raise ValueError("Can't recognize separator")
 
 
-def analyze_num(df, session_dir):
-    num_df = df.select_dtypes(include="number")
+def analyze_num(df, num_cols, session_dir):
+    num_df = df[num_cols]
     # descriptive stats
     stats = num_df.describe().round(3).to_dict()
 
@@ -106,7 +123,7 @@ def analyze_num(df, session_dir):
         pairplot = sns.pairplot(num_df)
         figure = pairplot.figure  
         path = str(Path(session_dir) / "features.png").replace('\\', '/')
-        figure.savefig(path, dpi=800)
+        figure.savefig(path, dpi=300)
         plt.close()
         plots.append(path)
 
@@ -116,7 +133,7 @@ def analyze_num(df, session_dir):
         heatmap=sns.heatmap(corr,  linewidths=1, cmap=cmap, center=0)
         figure = heatmap.figure  
         path = str(Path(session_dir) / "correlations.png").replace('\\', '/')
-        figure.savefig(path, dpi=800)
+        figure.savefig(path, dpi=300, bbox_inches='tight')
         plt.close()
         plots.append(path)
 
@@ -129,16 +146,45 @@ def analyze_qual(df, qual_cols, session_dir):
     
     # plots 
     plots = []
-    for col in qual_cols:
-        plt.figure(figsize=(8, 4))
-        sns.countplot(data=df, x=col, order=df[col].value_counts().index, color='lightblue', edgecolor='black')
-        plt.xticks(rotation=45)
-        plt.title(f"Frequency distribution - {col}")
-        path = str(Path(session_dir) / f"{col}_barplot.png").replace('\\', '/')
-        plt.tight_layout()
-        plt.savefig(path)
-        plt.close()
-        plots.append(path)
+
+    cols = qual_df.columns
+    n = len(cols)
+    ncols = 2      
+    nrows = math.ceil(n / ncols) 
+
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(ncols * 3, nrows * 3))
+    axes = axes.flatten()  # necessary to iterate axes[i]
+
+    for i, col in enumerate(cols):
+        order = qual_df[col].value_counts().index
+        
+        palette = sns.color_palette("Set2", len(order))
+        
+        sns.countplot(
+            data=qual_df, 
+            x=col, 
+            hue=col,
+            order=order, 
+            palette=palette, 
+            edgecolor='black', 
+            legend=False,
+            ax=axes[i]
+        )
+        
+        axes[i].set_title(f"Barplot - {col}", fontsize=12)
+        axes[i].set_ylabel("Count", fontsize=10)
+        axes[i].set_xlabel("")
+        axes[i].tick_params(axis='x', rotation=45)   
+
+    # delete remaining axes
+    for j in range(n, len(axes)):
+        fig.delaxes(axes[j])
+
+    plt.tight_layout()
+    path = str(Path(session_dir) / "qual_distributions.png").replace('\\', '/')
+    plt.savefig(path, dpi=300, bbox_inches='tight')
+    plt.close()
+    plots.append(path)
 
     return stats, plots
 
@@ -233,7 +279,6 @@ def analyze_csv(file):
     print(f"Numerical columns: {num_cols}")
     print(f"Categorical columns: {qual_cols}")
     print(f"Text columns: {text_cols}")
-    print(f"qual_cols: {qual_cols}")
 
     # get stats based on column types
     results={}

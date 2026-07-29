@@ -95,4 +95,5 @@ def init_cleanup():
     cleanup_temp_dirs()
     
     t = threading.Thread(target=_cleanup_loop)
+    t.daemon = True
     t.start()
