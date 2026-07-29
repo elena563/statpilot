@@ -1,4 +1,3 @@
-import os
 from collections import Counter
 import math
 import nltk
@@ -16,11 +15,9 @@ from services.session import get_session_dir
 nltk.download('stopwords')
 
 
-
 def is_text(series: pd.Series, score_threshold: int = 2) -> bool:
     """
     returns True if column is free text (needs NLP analysis), False if other
-
     relies on: average and median length, unique values number, average number of words
     """
     if pd.api.types.is_numeric_dtype(series) or pd.api.types.is_datetime64_any_dtype(series):
@@ -47,7 +44,7 @@ def is_text(series: pd.Series, score_threshold: int = 2) -> bool:
     if lengths.median() > 20:
         score += 1
 
-    #print(f'lengths.mean(): {lengths.mean()}, lengths.std(): {lengths.std()}, cardinality_ratio: {cardinality_ratio}, avg_words: {avg_words}, lengths.median(): {lengths.median()}, score: {score}')
+    print(f'lengths.mean(): {lengths.mean()}, lengths.std(): {lengths.std()}, cardinality_ratio: {cardinality_ratio}, avg_words: {avg_words}, lengths.median(): {lengths.median()}, score: {score}')
     
     return score >= score_threshold
 
@@ -146,7 +143,7 @@ def analyze_qual(df, qual_cols, session_dir):
     return stats, plots
 
 def analyze_text(df, text_cols, session_dir):
-    text = " ".join(df[col].astype(str).str.lower().str.cat(sep=' ') for col in text_cols)
+    text = " ".join(df[col].astype(str).str.lower().str.cat(sep=' ', na_rep='') for col in text_cols)
 
     # stopwords
     stop_words = set(stopwords.words('english'))
@@ -156,7 +153,7 @@ def analyze_text(df, text_cols, session_dir):
         serie = df[col].dropna().astype(str)
         n = len(serie)
         total_chars = serie.str.len()
-        total_words = serie.str.split().apply(len)
+        total_words = serie.str.split().apply(lambda x: len(x) if isinstance(x, list) else 0)
         
         row = {
             'count': n,
@@ -176,9 +173,9 @@ def analyze_text(df, text_cols, session_dir):
 
     # plots
     plots = []
-
+    print(text_cols)
     for col in text_cols:
-        length = df[col].astype(str).str.split().apply(len)
+        length = df[col].astype(str).str.split().apply(lambda x: len(x) if isinstance(x, list) else 0)
         length.hist(bins=30, color='lightblue', edgecolor='black')
         plt.xlabel("Words number")
         plt.ylabel("Frequency")
@@ -226,7 +223,6 @@ def analyze_csv(file):
 
     cols = [col for col in df.columns if 'date' not in col.lower()]
     df= df[cols]
-    print(df.dtypes)
 
     # analyze variable types
     num_cols = df.select_dtypes(include="number").columns.tolist()
