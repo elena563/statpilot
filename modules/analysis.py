@@ -1,4 +1,5 @@
 from collections import Counter
+import csv
 import math
 import nltk
 from nltk.corpus import stopwords
@@ -48,37 +49,36 @@ def is_text(series: pd.Series, score_threshold: int = 2) -> bool:
     
     return score >= score_threshold
 
-import csv
-
-def has_header(file) -> bool:
-    file.seek(0)
-    sample = file.read(2048).decode('utf-8', errors='ignore')
-    file.seek(0)
-    sniffer = csv.Sniffer()
-    try:
-        return sniffer.has_header(sample)
-    except csv.Error:
-        return True
 
 def read_csv_sep(file) -> pd.DataFrame:
-    seps = [',', ';', '\t', '|', r'\s+']
     file.seek(0)
-    header = has_header(file)
+    sample = file.read(2048)
+    if isinstance(sample, bytes):
+        sample = sample.decode('utf-8', errors='ignore')
+    file.seek(0)
+    
+    sniffer = csv.Sniffer()
+    try:
+        dialect = sniffer.sniff(sample, delimiters=',;\t|')
+        sep = dialect.delimiter
+        header = sniffer.has_header(sample)
+    except csv.Error:
+        sep = ','
+        header = True
 
-    for sep in seps:
-        file.seek(0) 
-        try:
-            if header:
-                df = pd.read_csv(file, sep=sep)
-            else:
-                df = pd.read_csv(file, sep=sep, header=None)
-                df.columns = [f"col_{i}" for i in df.columns] 
-            if df.shape[1] > 1:  # more than one column
-                return df
-        except Exception:
-            continue
+    try:
+        file.seek(0)
+        if header:
+            df = pd.read_csv(file, sep=sep)
+        else:
+            df = pd.read_csv(file, sep=sep, header=None)
+            df.columns = [f"col_{i}" for i in range(len(df.columns))]
+        if df.shape[1] > 1:
+            return df
+    except Exception:
+        pass
+
     raise ValueError("Can't recognize separator")
-
 
 def analyze_num(df, num_cols, session_dir):
     num_df = df[num_cols]

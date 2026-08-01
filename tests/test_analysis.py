@@ -1,6 +1,6 @@
 import pandas as pd
-
-from modules.analysis import is_text
+import pytest
+from modules.analysis import is_text, read_csv_sep, analyze_num, analyze_qual, analyze_text
 
 def test_is_text():
     # categorical data
@@ -27,3 +27,29 @@ def test_is_text():
                                   'The portions were small and overpriced. I expected more for the price I paid.',
                                   'Horrible', 'The food was cold and tasteless. I will not be coming back.',])
     assert is_text(free_text_series) == True
+
+
+def test_analyze_num(num_df, tmp_path):
+    stats, plots = analyze_num(num_df, ["age", "score"], tmp_path)
+    assert "age" in stats
+    assert "score" in stats
+    assert len(plots) > 0
+
+def test_analyze_qual(qual_df, tmp_path):
+    stats, plots = analyze_qual(qual_df, ["city", "category"], tmp_path)
+    assert "city" in stats
+    assert "category" in stats
+    assert len(plots) > 0
+
+def test_analyze_text(text_df, tmp_path):
+    stats, plots = analyze_text(text_df, ["review"], tmp_path)
+    assert "review" in stats
+    assert len(plots) > 0
+
+@pytest.mark.parametrize("delimiter", [",", ";", "\t", "|"])
+def test_read_csv_sep(tmp_path, delimiter):
+    csv = tmp_path / "test.csv"
+    csv.write_text(f"a{delimiter}b{delimiter}c\n1{delimiter}2{delimiter}3\n4{delimiter}5{delimiter}6")
+    with open(csv, "r") as f:
+        df = read_csv_sep(f)
+    assert df.shape == (2, 3)
