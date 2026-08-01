@@ -1,4 +1,3 @@
-import joblib
 import os
 from pathlib import Path
 import re
@@ -6,23 +5,14 @@ import shutil
 import time
 import threading
 import uuid
+import onnxruntime as ort
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor
-from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 from variables import TEMP_DIR, CLEANUP_MAX_AGE_HOURS, CLEANUP_INTERVAL_HOURS
 
 UUID_RE = re.compile(
     r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
 )
-
-ALLOWED_MODELS = (
-        RandomForestClassifier, RandomForestRegressor,
-        LogisticRegression, LinearRegression,
-        DecisionTreeClassifier, DecisionTreeRegressor,
-        GradientBoostingClassifier, GradientBoostingRegressor,
-    )
 
 # session logic
 def get_session_dir() -> Path:
@@ -53,18 +43,13 @@ def load_dataframe(session_id: str, filename: str = "dataset.csv") -> pd.DataFra
         raise FileNotFoundError("The session has expired. Please upload the file again.")
 
 def load_model(session_id: str, validate: bool = False):
-    path = session_path(session_id, "model.pkl")
-    try:
-        model = joblib.load(path)
-    except FileNotFoundError:
+    path = session_path(session_id, "model.onnx")
+    if not path.exists():
         raise FileNotFoundError("Model not found, session expired")
+    try:
+        return ort.InferenceSession(str(path), providers=['CPUExecutionProvider'])
     except Exception:
         raise ValueError("Error loading the model")
-    
-    if validate and not isinstance(model, ALLOWED_MODELS):
-        raise ValueError("Not a valid model type. Please upload a supported model.")
-    
-    return model
 
 
 # clean temporary directories

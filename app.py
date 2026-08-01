@@ -162,15 +162,15 @@ def explain():
                 return render_template("explainability.html", error='xtest file must be a CSV (.csv)')
             model_filename = model_file.filename
             _, model_ext = os.path.splitext(model_filename)
-            if model_ext.lower() != '.pkl':
-                return render_template("explainability.html", error='model file must be a Pickle (.pkl)')
+            if model_ext.lower() != '.onnx':
+                return render_template("explainability.html", error='model file must be an ONNX model (.onnx)')
 
             # temporary save dataset and model to pass them to the form
             session_dir = get_session_dir()  
             session_id = session_dir.name
 
             X_path = session_dir / "xtest.csv"
-            model_path = session_dir / "model.pkl"
+            model_path = session_dir / "model.onnx"
     
             xtest_file.save(X_path)
             model_file.save(model_path)
@@ -208,8 +208,9 @@ def explain():
             except (TypeError, ValueError):
                 return render_template("explainability.html", error="Observation index must be an integer")
 
-            row = X_test.iloc[obs_index].values.reshape(1, -1)
-            y_pred = model.predict(row)
+            row = X_test.iloc[obs_index].values.reshape(1, -1).astype('float32')
+            input_name = model.get_inputs()[0].name
+            y_pred = model.run(None, {input_name: row})[0]
             feature_names = list(X_test.columns)
             row_list = row.flatten().tolist()
             y_pred2 = y_pred[0]
@@ -234,7 +235,7 @@ def download():
     file = request.args.get('file') 
     
     if file == 'model':
-        filename = "model.pkl"
+        filename = "model.onnx"
     elif file == 'xtest':
         filename = "xtest.csv"
     else:

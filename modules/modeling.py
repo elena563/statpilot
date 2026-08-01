@@ -1,7 +1,8 @@
 from flask import Flask
 import pandas as pd
-import joblib
-from pathlib import Path
+import json
+from skl2onnx import to_onnx
+from skl2onnx.common.data_types import FloatTensorType
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingRegressor
 from sklearn.linear_model import LinearRegression, ElasticNet, LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
@@ -14,9 +15,10 @@ from variables import TEST_SIZE, RANDOM_STATE
 def train_model(df, target, model_type, session_id):
 
     X = df.drop(columns=[target])
-    X = pd.get_dummies(X)
+    X = pd.get_dummies(X).astype('float32') 
     X_columns = X.columns.tolist()
-    joblib.dump(X_columns, session_path(session_id, "columns.pkl"))
+    with open(session_path(session_id, "columns.json"), "w") as f:
+        json.dump(X_columns, f)
     y = df[target]
 
     if y.dtype == 'object' or pd.api.types.is_categorical_dtype(y):
@@ -70,8 +72,11 @@ def train_model(df, target, model_type, session_id):
         results['Recall'] = round(recall_score(y_test, y_pred, average='weighted'), 3)
         results['F1'] = round(f1_score(y_test, y_pred, average='weighted'), 3)
 
-    path = session_path(session_id, "model.pkl")
-    joblib.dump(model, path)
+    path = session_path(session_id, "model.onnx")
+    initial_type = [('float_input', FloatTensorType([None, len(X_columns)]))]
+    onnx_model = to_onnx(model, initial_types=initial_type)
+    with open(path, "wb") as f:
+        f.write(onnx_model.SerializeToString())
 
     path = session_path(session_id, "xtest.csv")
     X_test.to_csv(path, index=False)
@@ -97,14 +102,16 @@ def test_model(dfx, model, input_data, session_id):
 
     X = X.astype(dfx.dtypes.to_dict())
     X = pd.get_dummies(X)
-    columns = joblib.load(session_path(session_id, "columns.pkl"))
+    with open(session_path(session_id, "columns.json"), "r") as f:
+        columns = json.load(f)
 
     for col in columns:
         if col not in X.columns:
             X[col] = 0
 
-    X = X[columns]
-    y_pred = model.predict(X)
+    X = X[columns].astype('float32')
+    input_name = model.get_inputs()[0].name
+    y_pred = model.run(None, {input_name: X.values})[0]
     feature_names = list(dfx.columns)
     row_list = list(input_data.values())
     y_pred2 = y_pred[0]
