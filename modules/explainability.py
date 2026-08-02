@@ -1,5 +1,7 @@
 import shap
 import matplotlib.pyplot as plt
+import numpy as np
+import onnxruntime as ort
 import pandas as pd
 from pathlib import Path
 from modules.analysis import get_session_dir
@@ -14,29 +16,53 @@ def preprocess(X):
     if len(cat_cols) > 0:
         X = pd.get_dummies(X, columns=cat_cols, drop_first=True)
 
-    # nan filling
     X = X.fillna(X.mean(numeric_only=True))
     return X.astype(float)
 
+def _onnx_predict(model, X, input_name):
+    return model.run(None, {input_name: np.asarray(X, dtype=np.float32)})[0]
+
+def _onnx_predict_proba(model, X, input_name):
+    outputs = model.run(None, {input_name: np.asarray(X, dtype=np.float32)})
+    if len(outputs) > 1:
+        out = outputs[-1]
+        if isinstance(out, list):
+            keys = list(out[0].keys())
+            return np.array([[r.get(k, 0.0) for k in keys] for r in out], dtype=np.float32)
+        return out
+    return outputs[0]
+
 def setup_explainer(model, X_test):
-    # check for model type to choose the right explainer
-    model_type = type(model).__name__
+    # use KernelExplainer for ONNX models
     X_test_prep = preprocess(X_test)
 
-    if model_type in ['LogisticRegression', 'LinearRegression', 'ElasticNet']:
-        explainer = shap.LinearExplainer(model, X_test_prep)
-    elif model_type in ['RandomForestClassifier', 'GradientBoostingRegressor', 'DecisionTreeClassifier']:
-        explainer = shap.TreeExplainer(model)
+    input_name = model.get_inputs()[0].name
+    background = shap.sample(X_test_prep, 50)
+    if len(model.get_outputs()) > 1:
+        explainer = shap.KernelExplainer(
+            lambda X: _onnx_predict_proba(model, X, input_name), background)
     else:
-        explainer = shap.KernelExplainer(model, X_test_prep) # warning: slow
+        explainer = shap.KernelExplainer(
+            lambda X: _onnx_predict(model, X, input_name), background)
 
     return X_test_prep, explainer
 
-def explain_global(model, X_test):
-    X_test_prep, explainer = setup_explainer(model, X_test)
-    shap_values = explainer(X_test_prep)
+def compute_shap_values(model, X):
+    X_test_prep, explainer = setup_explainer(model, X)
+    X_sub = shap.sample(X_test_prep, min(200, int(X_test_prep.shape[0] * 0.3)))
+    shap_values = explainer.shap_values(X_sub, nsamples=int(np.clip(X_test_prep.shape[1] * 20, 500, 2000)))
 
-    shap.summary_plot(shap_values, X_test_prep)
+    if isinstance(shap_values, list):   # multi-class classification
+        shap_values = shap_values[1]
+    elif len(shap_values.shape) == 3:
+        shap_values = shap_values[:, :, 1]
+
+    return shap_values, X_sub
+
+def explain_global(model, X_test):
+    shap_values, X_sub = compute_shap_values(model, X_test)
+
+    shap.summary_plot(shap_values, X_sub, show=False)
 
     session_dir = get_session_dir()
     path = str(Path(session_dir) / "distributions.png").replace('\\', '/')
@@ -46,8 +72,7 @@ def explain_global(model, X_test):
     return path
 
 def explain_local(obs_index, model, X_test):
-    X_test_prep, explainer = setup_explainer(model, X_test)
-    shap_values = explainer(X_test_prep)
+    shap_values, X_sub = compute_shap_values(model, X_test)
 
     plots = []
     session_dir = get_session_dir()
@@ -55,7 +80,7 @@ def explain_local(obs_index, model, X_test):
     shap.force_plot(
     shap_values[obs_index].base_values,
     shap_values[obs_index].values,
-    X_test_prep.iloc[obs_index],
+    X_sub.iloc[obs_index],
     matplotlib=True
     )
     path = str(Path(session_dir) / "forceplot.png").replace('\\', '/')

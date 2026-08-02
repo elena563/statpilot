@@ -1,5 +1,6 @@
 from flask import Flask
 import pandas as pd
+from pandas.api.types import is_categorical_dtype, is_string_dtype
 import json
 from skl2onnx import to_onnx
 from skl2onnx.common.data_types import FloatTensorType
@@ -14,6 +15,7 @@ from variables import TEST_SIZE, RANDOM_STATE
 
 def train_model(df, target, model_type, session_id):
 
+    df.dropna(inplace=True)
     X = df.drop(columns=[target])
     X = pd.get_dummies(X).astype('float32') 
     X_columns = X.columns.tolist()
@@ -21,7 +23,10 @@ def train_model(df, target, model_type, session_id):
         json.dump(X_columns, f)
     y = df[target]
 
-    if y.dtype == 'object' or pd.api.types.is_categorical_dtype(y):
+    print(y.dtype)
+    print(pd.api.types.is_categorical_dtype(y))
+    if y.dtype in (str, 'str', 'object') or is_string_dtype(y) or is_categorical_dtype(y):
+        print('here')
         target_type = 'classif'
     else:
         target_type = 'regr'
@@ -95,7 +100,7 @@ def train_model(df, target, model_type, session_id):
 
     return results, input_info
 
-def test_model(dfx, model, input_data, session_id):
+def test_model(dfx: pd.DataFrame, model, input_data: dict, session_id: str) :
 
     input_series = pd.Series(input_data)
     X = input_series.to_frame().T
@@ -115,5 +120,7 @@ def test_model(dfx, model, input_data, session_id):
     feature_names = list(dfx.columns)
     row_list = list(input_data.values())
     y_pred2 = y_pred[0]
+    if isinstance(y_pred2, (int, float)):
+        y_pred2 = round(y_pred2, 3)
 
     return y_pred2, row_list, feature_names

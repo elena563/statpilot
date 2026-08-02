@@ -70,6 +70,8 @@ def model():
         if form_type == 'train_form':
             # first submit
             if 'dataset' in request.files:
+                session_dir = get_session_dir()  
+                session_id = session_dir.name
                 path = session_path(session_id, "dataset.csv")
                 file = request.files['dataset']
                 if not file:

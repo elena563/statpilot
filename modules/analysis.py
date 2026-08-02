@@ -1,3 +1,4 @@
+import os
 from collections import Counter
 import csv
 import math
@@ -51,6 +52,8 @@ def is_text(series: pd.Series, score_threshold: int = 2) -> bool:
 
 
 def read_csv_sep(file) -> pd.DataFrame:
+    if isinstance(file, (str, os.PathLike)):
+        file = open(file, "rb")
     file.seek(0)
     sample = file.read(2048)
     if isinstance(sample, bytes):
