@@ -1,6 +1,7 @@
 from flask import Flask
+import numpy as np
 import pandas as pd
-from pandas.api.types import is_string_dtype
+from pandas.api.types import is_string_dtype, infer_dtype
 import json
 from skl2onnx import to_onnx
 from skl2onnx.common.data_types import FloatTensorType
@@ -14,7 +15,55 @@ from sklearn.preprocessing import LabelEncoder
 from services.session import session_path
 from variables import TEST_SIZE, RANDOM_STATE
 
-def preproc_df(df: pd.DataFrame, target: str, session_id: str) -> tuple[pd.DataFrame, pd.Series, str]:
+class DatasetValidationError(Exception):
+    """Custom exception for dataset validation errors."""
+    pass
+
+def validate_dtypes(df: pd.DataFrame):
+    """Validate data types in the DataFrame before encoding."""
+    for col in df.columns:
+        if 'mixed' in infer_dtype(df[col]):
+            raise DatasetValidationError(
+                f"Column '{col}' contains mixed data types. "
+                "Clean the column before training."
+            )
+
+def validate_dim(X: pd.DataFrame, y: np.ndarray, target_type: str):
+    n_samples = len(X)
+
+    if n_samples < 10:
+        raise DatasetValidationError(
+            f"Dataset too small ({n_samples} samples). "
+            "At least 10 samples are required to train a model."
+        )
+
+    if target_type == 'classif':
+        classes, counts = np.unique(y, return_counts=True)
+        n_classes = len(classes)
+
+        if n_classes < 2:
+            raise DatasetValidationError(
+                "The target column contains only one distinct class. "
+                "At least 2 classes are required for classification."
+            )
+
+        min_samples_per_class = counts.min()
+        if min_samples_per_class < 2:
+            raise DatasetValidationError(
+                "Found one or more classes with only 1 sample in the dataset. "
+                "Each class must have at least 2 samples to allow for validation."
+            )
+            
+        if n_samples / n_classes < 3:
+            raise DatasetValidationError(
+                f"The dataset has {n_samples} rows but {n_classes} different classes. "
+                "There are too few rows per class to create a valid Train/Test split."
+            )
+
+    if X.shape[1] == 0:
+        raise DatasetValidationError("The dataset does not contain valid features for training.")
+
+def preproc_df(df: pd.DataFrame, target: str, session_id: str) -> tuple[pd.DataFrame, np.ndarray, str]:
     df.dropna(inplace=True)
 
     # target variable
@@ -67,11 +116,13 @@ def get_model(model_type: str, n_samples: int) -> tuple:
 
     return model, task
 
-def train_model(df, target, model_type, session_id):
+def train_model(df: pd.DataFrame, target: str, model_type: str, session_id: str) -> tuple[dict, list]:
 
     n_samples = df.shape[0]
 
+    validate_dtypes(df)
     X, y, target_type = preproc_df(df, target, session_id)
+    validate_dim(X, y, target_type)
     model, task = get_model(model_type, n_samples)
 
     if task != target_type:
@@ -82,7 +133,11 @@ def train_model(df, target, model_type, session_id):
     )
 
     if n_samples < 30:  # cross-validation for small datasets
-        n_splits = 3 if n_samples < 15 else 5
+        _, counts = np.unique(y, return_counts=True)
+        min_samples_per_class = counts.min()
+        
+        desired_splits = 3 if n_samples < 15 else 5
+        n_splits = max(2, min(desired_splits, min_samples_per_class))
         
         if task == 'classif':
             cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE)

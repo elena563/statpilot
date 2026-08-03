@@ -4,7 +4,7 @@ import pandas as pd
 from dotenv import load_dotenv
 
 from modules.analysis import analyze_csv, get_session_dir, read_csv_sep
-from modules.modeling import train_model, test_model
+from modules.modeling import train_model, test_model, DatasetValidationError
 from modules.explainability import explain_global, explain_local
 from services.session import validate_session_id, session_path, load_dataframe, load_model, init_cleanup
 
@@ -109,6 +109,8 @@ def model():
                 session_path(session_id, "target.txt").write_text(target)
                 try:
                     results, input_info = train_model(df, target, model_type, session_id)
+                except (DatasetValidationError, ValueError) as e:
+                    return render_template("modeling.html", error=str(e))
                 except Exception as e:
                     return render_template("modeling.html", error=f"Error occurred while training the model: {str(e)}")
 
