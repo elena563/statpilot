@@ -42,7 +42,7 @@ def load_dataframe(session_id: str, filename: str = "dataset.csv") -> pd.DataFra
     except FileNotFoundError:
         raise FileNotFoundError("The session has expired. Please upload the file again.")
 
-def load_model(session_id: str, validate: bool = False):
+def load_model(session_id: str):
     path = session_path(session_id, "model.onnx")
     if not path.exists():
         raise FileNotFoundError("Model not found, session expired")

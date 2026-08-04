@@ -13,6 +13,7 @@ from sklearn.model_selection import train_test_split, cross_val_predict, KFold, 
 from sklearn.preprocessing import LabelEncoder
 
 from services.session import session_path
+from modules.analysis import is_text
 from variables import TEST_SIZE, RANDOM_STATE
 
 class WarningCollector:
@@ -25,6 +26,9 @@ class WarningCollector:
 class DatasetValidationError(Exception):
     """Custom exception for dataset validation errors."""
     pass
+
+def is_cat(col):
+    return is_string_dtype(col) or isinstance(col.dtype, pd.CategoricalDtype)
 
 def validate_dtypes(df: pd.DataFrame):
     """Validate data types in the DataFrame before encoding."""
@@ -72,12 +76,11 @@ def validate_dim(X: pd.DataFrame, y: np.ndarray, target_type: str, collector: Wa
         raise DatasetValidationError("The dataset does not contain valid features for training.")
     
     for col in X.columns:
-        is_cat = is_string_dtype(X[col]) or isinstance(X[col].dtype, pd.CategoricalDtype)
         col_nunique = X[col].nunique()
-        if col_nunique > 20 and col_nunique > n_samples * 0.3 and is_cat:
+        if col_nunique > 20 and col_nunique > n_samples * 0.3 and is_cat(X[col]):
             collector.add(f"Column '{col}' has high cardinality ({col_nunique} unique values)...")
 
-def preproc_df(df: pd.DataFrame, target: str, session_id: str) -> tuple[pd.DataFrame, np.ndarray, str]:
+def preproc_df(df: pd.DataFrame, target: str, session_id: str, collector: WarningCollector) -> tuple[pd.DataFrame, np.ndarray, str]:
     cols_to_drop = [col for col in df.columns if col != target and df[col].nunique() <= 1]
     df.drop(columns=cols_to_drop, inplace=True)
     
@@ -91,10 +94,15 @@ def preproc_df(df: pd.DataFrame, target: str, session_id: str) -> tuple[pd.DataF
     if df[target].nunique() == 1:
         raise DatasetValidationError("Target column has only one unique value, cannot train.")
 
+    for col in df.columns:
+        if is_text(df[col]):
+            df.drop(columns=[col], inplace=True)
+            collector.add(f"Column '{col}' appears to be free text and was excluded from the model.")
+
     # target variable
     y_raw = df[target]
 
-    if is_string_dtype(y_raw) or isinstance(y_raw.dtype, pd.CategoricalDtype):
+    if is_cat(y_raw):
         target_type = 'classif'
     else:
         target_type = 'regr'
@@ -154,7 +162,11 @@ def train_model(df: pd.DataFrame, target: str, model_type: str, session_id: str)
         )
 
     validate_dtypes(df)
-    X, y, target_type = preproc_df(df, target, session_id)
+    X, y, target_type = preproc_df(df, target, session_id, collector)
+    dfx = df.drop(columns=[target])
+    with open(session_path(session_id, "features.json"), "w") as f:
+        json.dump(dfx.columns.tolist(), f)
+
     validate_dim(X, y, target_type, collector)
     model, task = get_model(model_type, n_samples)
 
@@ -226,9 +238,31 @@ def train_model(df: pd.DataFrame, target: str, model_type: str, session_id: str)
 
     return results, input_info, collector.warnings
 
-def test_model(dfx: pd.DataFrame, model, input_data: dict, session_id: str) :
 
+def validate_test_data(dfx: pd.DataFrame, input_data: dict):
+    for col, val in input_data.items():
+        dtype = dfx[col].dtype
+
+        if val is None or str(val).strip() == "":
+            raise ValueError(f"Please insert a value for column '{col}'") 
+        elif pd.api.types.is_numeric_dtype(dtype):
+            try:
+                float(val)
+            except ValueError:
+                raise ValueError(f"Invalid value for column '{col}': {val}. Expected a numeric value.")
+        elif pd.api.types.is_bool_dtype(dtype):
+            if str(val).lower() not in ['true', 'false', '1', '0']:
+                raise ValueError(f"Invalid value for column '{col}': {val}. Expected a boolean value (True/False).")
+        elif is_cat(dfx[col]):
+            if val not in dfx[col].unique():
+                raise ValueError(f"Invalid value for column '{col}': {val}")
+
+def test_model(dfx: pd.DataFrame, model, input_data: dict, session_id: str, classes: list=None):
+    for col in dfx.columns:
+        if pd.api.types.is_bool_dtype(dfx[col].dtype):
+            input_data[col] = input_data[col].lower() in ('true', '1')
     input_series = pd.Series(input_data)
+    
     X = input_series.to_frame().T
 
     X = X.astype(dfx.dtypes.to_dict())
@@ -245,8 +279,11 @@ def test_model(dfx: pd.DataFrame, model, input_data: dict, session_id: str) :
     y_pred = model.run(None, {input_name: X.values})[0]
     feature_names = list(dfx.columns)
     row_list = list(input_data.values())
-    y_pred2 = y_pred[0]
-    if isinstance(y_pred2, (int, float)):
-        y_pred2 = round(y_pred2, 3)
+   
+    if len(model.get_outputs()) > 1:          
+        label = int(np.asarray(y_pred).reshape(-1)[0])
+        y_pred2 = classes[label]             
+    else:                             
+        y_pred2 = round(float(np.asarray(y_pred).reshape(-1)[0]), 3)
 
     return y_pred2, row_list, feature_names

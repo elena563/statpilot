@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from modules.modeling import train_model, DatasetValidationError
+from modules.modeling import train_model, DatasetValidationError, validate_test_data
 from services.session import get_session_dir
 
 @pytest.mark.parametrize("model_type", ["Linear Regression", "Elastic Net Regression", "Gradient Boosting Regression"])
@@ -77,7 +77,7 @@ def test_const_target_error(base_df, const_col):
 def test_unbalanced_target_warning(unbalanced_df):
     session_dir = get_session_dir()  
     session_id = session_dir.name
-    
+
     _, _, warnings = train_model(unbalanced_df, target="pet", model_type="Logistic Regression", session_id=session_id)
     assert len(warnings) == 1
 
@@ -96,3 +96,27 @@ def test_small_df_error(base_df):
     df = base_df.head(9)
     with pytest.raises(DatasetValidationError):
         train_model(df, target="city", model_type="Logistic Regression", session_id=session_id)
+
+
+def test_validate_test_data(base_df):
+    with pytest.raises(ValueError):
+        validate_test_data(base_df[['age']], {"age": None})
+
+    with pytest.raises(ValueError):
+        validate_test_data(base_df[['city']], {"city": ""})
+
+    with pytest.raises(ValueError):
+        validate_test_data(base_df[['score']], {"score": "not_a_number"})
+
+    try:
+        validate_test_data(base_df[['score']], {"score": 85.0})
+    except ValueError:
+        pytest.fail("validate_test_data failed for number input")
+
+    with pytest.raises(ValueError):
+        validate_test_data(base_df[['city']], {"city": "NonexistentCity"})
+
+    try:
+        validate_test_data(base_df[['city']], {"city": "Milano"})
+    except ValueError:
+        pytest.fail("validate_test_data failed for categorical input")

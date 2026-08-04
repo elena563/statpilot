@@ -2,9 +2,10 @@ import os
 from flask import Flask, render_template, request, send_file
 import pandas as pd
 from dotenv import load_dotenv
+import json
 
 from modules.analysis import analyze_csv, get_session_dir, read_csv_sep
-from modules.modeling import train_model, test_model, DatasetValidationError
+from modules.modeling import train_model, test_model, DatasetValidationError, validate_test_data
 from modules.explainability import explain_global, explain_local
 from services.session import validate_session_id, session_path, load_dataframe, load_model, init_cleanup
 
@@ -126,20 +127,29 @@ def model():
                 return render_template("modeling.html", error=str(e))
 
             try:
-                model = load_model(session_id, validate=True)
+                model = load_model(session_id)
             except (ValueError, FileNotFoundError) as e:
                 return render_template("modeling.html", error=str(e))
 
             target_path = session_path(session_id, "target.txt")
             target = target_path.read_text().strip()
-            dfx = df.drop(columns=[target])
+
+            with open(session_path(session_id, "features.json")) as f:
+                features = json.load(f)
+            dfx = df[features]
 
             input_data = {col: request.form.get(col) for col in dfx.columns}
             if None in input_data.values():
                 return render_template("modeling.html", error="Please insert a value for each input feature")
+
+            try:
+                validate_test_data(dfx, input_data)
+            except ValueError as e:
+                return render_template("modeling.html", error=str(e))
             
             try:
-                result, row_list, feature_names = test_model(dfx, model, input_data, session_id)
+                classes = sorted(df[target].dropna().unique().tolist())
+                result, row_list, feature_names = test_model(dfx, model, input_data, session_id, classes)
             except Exception as e:
                 return render_template("modeling.html", error=f"Error occurred while testing the model: {str(e)}")
             
@@ -186,7 +196,7 @@ def explain():
                 return render_template("explainability.html", error="Can't read CSV, check the separator and encoding")
 
             try:
-                model = load_model(session_id, validate=True) 
+                model = load_model(session_id) 
             except (ValueError, FileNotFoundError) as e:
                 return render_template("explainability.html", error=str(e))
             
@@ -202,7 +212,7 @@ def explain():
 
             try:
                 X_test = load_dataframe(session_id, "xtest.csv")
-                model = load_model(session_id, validate=False)
+                model = load_model(session_id)
             except (ValueError, FileNotFoundError) as e:
                 return render_template("explainability.html", error=str(e))
             except Exception as e:
