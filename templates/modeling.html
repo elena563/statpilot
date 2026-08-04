@@ -66,6 +66,16 @@
 
     {% if results %}
         <section class="my-6 flex flex-col items-center">
+            {% if warnings %}
+                <div class="bg-yellow-50 border-2 border-yellow-500 text-yellow-700 p-4 mb-4 max-w-3xl" role="alert">
+                    <p class="font-bold">Warning:</p>
+                    <ul class="list-disc list-inside">
+                        {% for warning in warnings %}
+                            <li>{{ warning }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
             <h3 class="text-2xl font-bold text-center my-4">Model Performance</h3>
             <table class="max-w-3xl">
                 {% for metric, value in results.items() %}

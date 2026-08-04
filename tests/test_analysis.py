@@ -29,20 +29,20 @@ def test_is_text():
     assert is_text(free_text_series) == True
 
 
-def test_analyze_num(num_df, tmp_path):
-    stats, plots = analyze_num(num_df, ["age", "score"], tmp_path)
+def test_analyze_num(base_df, tmp_path):
+    stats, plots = analyze_num(base_df, ["age", "score"], tmp_path)
     assert "age" in stats
     assert "score" in stats
     assert len(plots) > 0
 
-def test_analyze_qual(qual_df, tmp_path):
-    stats, plots = analyze_qual(qual_df, ["city", "category"], tmp_path)
+def test_analyze_qual(base_df, tmp_path):
+    stats, plots = analyze_qual(base_df, ["city", "category"], tmp_path)
     assert "city" in stats
     assert "category" in stats
     assert len(plots) > 0
 
-def test_analyze_text(text_df, tmp_path):
-    stats, plots = analyze_text(text_df, ["review"], tmp_path)
+def test_analyze_text(base_df, tmp_path):
+    stats, plots = analyze_text(base_df, ["review"], tmp_path)
     assert "review" in stats
     assert len(plots) > 0
 

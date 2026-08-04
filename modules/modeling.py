@@ -15,6 +15,13 @@ from sklearn.preprocessing import LabelEncoder
 from services.session import session_path
 from variables import TEST_SIZE, RANDOM_STATE
 
+class WarningCollector:
+    def __init__(self):
+        self.warnings = []
+    
+    def add(self, msg: str):
+        self.warnings.append(msg)
+
 class DatasetValidationError(Exception):
     """Custom exception for dataset validation errors."""
     pass
@@ -28,7 +35,7 @@ def validate_dtypes(df: pd.DataFrame):
                 "Clean the column before training."
             )
 
-def validate_dim(X: pd.DataFrame, y: np.ndarray, target_type: str):
+def validate_dim(X: pd.DataFrame, y: np.ndarray, target_type: str, collector: WarningCollector):
     n_samples = len(X)
 
     if n_samples < 10:
@@ -41,17 +48,18 @@ def validate_dim(X: pd.DataFrame, y: np.ndarray, target_type: str):
         classes, counts = np.unique(y, return_counts=True)
         n_classes = len(classes)
 
-        if n_classes < 2:
-            raise DatasetValidationError(
-                "The target column contains only one distinct class. "
-                "At least 2 classes are required for classification."
-            )
-
         min_samples_per_class = counts.min()
         if min_samples_per_class < 2:
             raise DatasetValidationError(
                 "Found one or more classes with only 1 sample in the dataset. "
                 "Each class must have at least 2 samples to allow for validation."
+            )
+        
+        minority_percentage = (min_samples_per_class / n_samples) * 100
+        if minority_percentage < 5:
+            collector.add(
+                f"The dataset has {n_samples} rows but the smallest class has only {min_samples_per_class} samples "
+                f"({minority_percentage:.2f}% of the dataset). This may lead to unreliable model performance."
             )
             
         if n_samples / n_classes < 3:
@@ -62,9 +70,25 @@ def validate_dim(X: pd.DataFrame, y: np.ndarray, target_type: str):
 
     if X.shape[1] == 0:
         raise DatasetValidationError("The dataset does not contain valid features for training.")
+    
+    for col in X.columns:
+        col_nunique = X[col].nunique()
+        if col_nunique > 20 and col_nunique > n_samples * 0.3:
+            collector.add(f"Column '{col}' has high cardinality ({col_nunique} unique values)...")
 
 def preproc_df(df: pd.DataFrame, target: str, session_id: str) -> tuple[pd.DataFrame, np.ndarray, str]:
+    cols_to_drop = [col for col in df.columns if col != target and df[col].nunique() <= 1]
+    df.drop(columns=cols_to_drop, inplace=True)
+    
     df.dropna(inplace=True)
+    if len(df) == 0:
+        raise DatasetValidationError("Dataset remains empty after dropping NaN values.")
+
+    if target not in df.columns or df[target].nunique() == 0:
+        raise DatasetValidationError("Target column is empty or missing after dropping NaN values.")
+
+    if df[target].nunique() == 1:
+        raise DatasetValidationError("Target column has only one unique value, cannot train.")
 
     # target variable
     y_raw = df[target]
@@ -83,8 +107,10 @@ def preproc_df(df: pd.DataFrame, target: str, session_id: str) -> tuple[pd.DataF
 
     # feature variables
     X = df.drop(columns=[target])
-    X = pd.get_dummies(X).astype('float32') # then switch to ColumnTransformer
+    if len(X) == 0:
+        raise DatasetValidationError("No valid features remain after dropping the target column.")
 
+    X = pd.get_dummies(X).astype('float32') # then switch to ColumnTransformer
     X_columns = X.columns.tolist()
     with open(session_path(session_id, "columns.json"), "w") as f:
         json.dump(X_columns, f)
@@ -116,13 +142,19 @@ def get_model(model_type: str, n_samples: int) -> tuple:
 
     return model, task
 
-def train_model(df: pd.DataFrame, target: str, model_type: str, session_id: str) -> tuple[dict, list]:
+def train_model(df: pd.DataFrame, target: str, model_type: str, session_id: str) -> tuple[dict, list, list]:
 
     n_samples = df.shape[0]
+    collector = WarningCollector()
+    if len(df.columns) > n_samples:
+        collector.add(
+            f"Dataset has {len(df.columns)} columns but only {n_samples} rows. "
+            "There are too many features for the number of samples."
+        )
 
     validate_dtypes(df)
     X, y, target_type = preproc_df(df, target, session_id)
-    validate_dim(X, y, target_type)
+    validate_dim(X, y, target_type, collector)
     model, task = get_model(model_type, n_samples)
 
     if task != target_type:
@@ -191,7 +223,7 @@ def train_model(df: pd.DataFrame, target: str, model_type: str, session_id: str)
             categories = dfx[col].dropna().unique().tolist()
             input_info.append({'name': col, 'type': 'text', 'choices': categories})
 
-    return results, input_info
+    return results, input_info, collector.warnings
 
 def test_model(dfx: pd.DataFrame, model, input_data: dict, session_id: str) :
 
