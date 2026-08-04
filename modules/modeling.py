@@ -72,8 +72,9 @@ def validate_dim(X: pd.DataFrame, y: np.ndarray, target_type: str, collector: Wa
         raise DatasetValidationError("The dataset does not contain valid features for training.")
     
     for col in X.columns:
+        is_cat = is_string_dtype(X[col]) or isinstance(X[col].dtype, pd.CategoricalDtype)
         col_nunique = X[col].nunique()
-        if col_nunique > 20 and col_nunique > n_samples * 0.3:
+        if col_nunique > 20 and col_nunique > n_samples * 0.3 and is_cat:
             collector.add(f"Column '{col}' has high cardinality ({col_nunique} unique values)...")
 
 def preproc_df(df: pd.DataFrame, target: str, session_id: str) -> tuple[pd.DataFrame, np.ndarray, str]:

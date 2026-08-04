@@ -8,10 +8,11 @@ from modules.modeling import train_model, test_model, DatasetValidationError
 from modules.explainability import explain_global, explain_local
 from services.session import validate_session_id, session_path, load_dataframe, load_model, init_cleanup
 
-load_dotenv()
+load_dotenv(override=True)
 
 app = Flask(__name__)
-debug = os.environ.get('DEBUG') == 'True'
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+debug = os.environ.get('DEBUG', '').strip().lower() in ('1', 'true', 'yes', 'on')
 
 @app.errorhandler(404)
 def not_found(e):
@@ -108,13 +109,13 @@ def model():
                 target = request.form.get('target')
                 session_path(session_id, "target.txt").write_text(target)
                 try:
-                    results, input_info = train_model(df, target, model_type, session_id)
+                    results, input_info, warnings = train_model(df, target, model_type, session_id)
                 except (DatasetValidationError, ValueError) as e:
                     return render_template("modeling.html", error=str(e))
                 except Exception as e:
                     return render_template("modeling.html", error=f"Error occurred while training the model: {str(e)}")
 
-            return render_template("modeling.html", results=results, session_id=session_id, input_info=input_info)
+            return render_template("modeling.html", results=results, session_id=session_id, input_info=input_info, warnings=warnings)
         
         elif form_type == 'test_form':
             session_id = validate_session_id(request.form.get('session_id'))
@@ -259,4 +260,8 @@ if __name__ == "__main__":
     init_cleanup()
     
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=debug)
+    app.run(host="0.0.0.0", port=port, debug=debug, use_reloader=True)
+
+
+
+
