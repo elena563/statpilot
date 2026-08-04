@@ -75,19 +75,11 @@
                     </thead>
                     {% for value in row_list %}
                         <td class="p-4 border-b border-gray-100 bg-white">
-                            {% if value is float or value is integer %}
-                                {{ value|round(3) }}
-                            {% else %}
-                                {{ value }}
-                            {% endif %}
+                            {{ value }}
                         </td>
                     {% endfor %}
                     <td class="p-4 border-b border-gray-100 bg-white">
-                        {% if y_pred2 is float or y_pred2 is integer %}
-                            {{ y_pred2|round(3) }}
-                        {% else %}
-                            {{ y_pred2 }}
-                        {% endif %}
+                        {{ y_pred2 }}
                     </td>
                 </table>
             </div>
@@ -99,7 +91,7 @@
                 explanations are useful for understanding individual predictions in detail and for 
                 communicating model decisions to end users.</p>
             {% for plot in plots %}
-                <img  src="{{ url_for('static', filename=plot.split('static/')[-1]) }}" width="500">
+                <img  src="{{ url_for('static', filename=plot.split('static/')[-1]) }}" width="700">
             {% endfor %}
 
         </section>

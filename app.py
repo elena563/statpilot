@@ -1,5 +1,6 @@
 import os
 from flask import Flask, render_template, request, send_file
+import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 import json
@@ -49,7 +50,7 @@ def analyze():
             filename = file.filename
             _, file_ext = os.path.splitext(filename)
             if file_ext.lower() != '.csv':
-                return render_template("analysis.html", error='dataset file must be a CSV (.csv)')
+                return render_template("analysis.html", error='Dataset file must be a CSV (.csv)')
 
             try:
                 results = analyze_csv(file)
@@ -83,7 +84,7 @@ def model():
                 filename = file.filename
                 _, file_ext = os.path.splitext(filename)
                 if file_ext.lower() != '.csv':
-                    return render_template("modeling.html", error='dataset file must be a CSV (.csv)')
+                    return render_template("modeling.html", error='Dataset file must be a CSV (.csv)')
 
                 try:
                     df = pd.read_csv(file)
@@ -201,7 +202,7 @@ def explain():
                 return render_template("explainability.html", error=str(e))
             
             try:
-                summary_plot = explain_global(model, X_test)
+                summary_plot = explain_global(model, X_test, session_id)
             except Exception as e:
                 return render_template("explainability.html", error=f"Error generating global explanation: {str(e)}")
             
@@ -219,23 +220,32 @@ def explain():
                 return render_template("explainability.html", error=f"Error loading session data: {str(e)}")
 
             try:
+                summary_plot = str(session_path(session_id, "distributions.png")).replace('\\', '/')
                 obs_index = int(request.form.get("obs"))
             except (TypeError, ValueError):
-                return render_template("explainability.html", error="Observation index must be an integer")
+                return render_template("explainability.html", error="Observation index must be an integer", summary_plot=summary_plot, session_id=session_id)
+
+            if obs_index < 0 or obs_index >= len(X_test):
+                return render_template("explainability.html", error="Observation index is out of bounds", summary_plot=summary_plot, session_id=session_id)
 
             row = X_test.iloc[obs_index].values.reshape(1, -1).astype('float32')
             input_name = model.get_inputs()[0].name
+
             y_pred = model.run(None, {input_name: row})[0]
+            if len(model.get_outputs()) > 1:
+                y_pred2 = int(np.asarray(y_pred).reshape(-1)[0])
+            else:
+                y_pred2 = round(float(np.asarray(y_pred).reshape(-1)[0]), 3)
+
             feature_names = list(X_test.columns)
             row_list = row.flatten().tolist()
-            y_pred2 = y_pred[0]
 
             try:
                 plots = explain_local(obs_index, model, X_test)
             except Exception as e:
                 return render_template("explainability.html", error=f"Error generating local explanation: {str(e)}")
 
-            return render_template("explainability.html", plots=plots, row_list=row_list, y_pred2=y_pred2, feature_names=feature_names)
+            return render_template("explainability.html", plots=plots, row_list=row_list, y_pred2=y_pred2, feature_names=feature_names, session_id=session_id)
     else:
         return render_template("explainability.html")
 
