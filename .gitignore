@@ -1,7 +1,10 @@
-temp/*
+*/temp/*
+*/__pycache__/*
 __pycache__/*
-modules/__pycache__/*
 *.pptx
 *.mp4
 .venv/*
 *.env
+test.py
+*.csv
+*.onnx

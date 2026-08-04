@@ -12,16 +12,18 @@
             </div>
             <h2 class="text-3xl font-bold text-center tech-dark-purple mb-12">Predictive Modeling</h2>
             <p class="text-l md:text-l text-gray-600 max-w-3xl mx-auto mb-8 animate-fade-in" style="animation-delay: 0.2s;">
-                This section lets you build and evaluate machine learning models directly from your dataset. No coding needed—just upload your data and choose a model.
+                This section lets you <strong>build and evaluate machine learning models</strong> directly from your dataset. No coding needed, just upload your data and choose a model.
                 Start by uploading a CSV with at least one target variable (column to predict) and several feature columns. First upload your dataset, then select your model type (e.g., linear regression, decision tree), your preferred target variable, and click "Train".
                 The app will train the model, show performance metrics (accuracy, precision, etc.), allow you to test it with new data and download it if needed.
             </p>
         </div>
-        <form class='flex flex-col align-center mx-auto mb-6 max-w-xs gap-4' method="POST" enctype="multipart/form-data">
+        
+        <form class='flex flex-col align-center mx-auto my-6 max-w-xs gap-6' method="POST" enctype="multipart/form-data">
+            <label for="dataset" class="text-2xl font-bold text-center my-4">Upload Your Dataset</label>
             <input type="hidden" name="session_id" value="{{ session_id }}">
             <input type="hidden" name="form_type" value="train_form">
             {% if not columns %}
-                <input type="file" name="dataset" accept=".csv" required>
+                <input type="file" name="dataset" id="dataset" accept=".csv" required>
             {% endif %}
 
             {% if columns %}
@@ -57,13 +59,23 @@
     </div>
 
     {% if error %}
-        <div class="bg-[#ffe6e6] rounded-lg p-4 mx-auto max-w-xs text-center mb-8 font-bold">
+        <div id="error-message" class="bg-[#ffe6e6] rounded-lg p-4 mx-auto max-w-xs text-center mb-8 font-bold">
             <p style="color:red">{{ error }}</p>
         </div>
     {% endif %}
 
     {% if results %}
         <section class="my-6 flex flex-col items-center">
+            {% if warnings %}
+                <div class="bg-yellow-50 border-2 border-yellow-500 text-yellow-700 rounded-lg p-6 mb-4 max-w-3xl" role="alert">
+                    <p class="font-bold">Warning:</p>
+                    <ul class="list-disc list-inside">
+                        {% for warning in warnings %}
+                            <li>{{ warning }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
             <h3 class="text-2xl font-bold text-center my-4">Model Performance</h3>
             <table class="max-w-3xl">
                 {% for metric, value in results.items() %}
@@ -74,7 +86,7 @@
                 {% endfor %}
             </table>
 
-            <p class="mt-6 mb-2">Click here to download your model in pickle format or your test set csv!</p>
+            <p class="mt-6 mb-2">Click here to download your model in ONNX format or your test set csv!</p>
             <div class="flex gap-4">
                 <a href="/download?session_id={{ session_id }}&file=model" class="border border-purple-500 text-purple-500 hover:bg-purple-50 px-8 py-2 rounded-md font-medium">Download model</a>
                 <a href="/download?session_id={{ session_id }}&file=xtest" class="border border-purple-500 text-purple-500 hover:bg-purple-50 px-8 py-2 rounded-md font-medium">Download test set</a>
@@ -126,16 +138,12 @@
                     </thead>
                     {% for value in row_list %}
                         <td class="p-4 border-b border-gray-100 bg-white">
-                            {% if value is number %}
-                                {{ value|round(3) }}
-                            {% else %}
-                                {{ value }}
-                            {% endif %}
+                            {{ value }}
                         </td>
                     {% endfor %}
                 </table>
             </div>
-            <h5 class="text-xl font-bold text-center my-4">{{ target }}: {{ result|round(3) }}</h5>
+            <h5 class="text-xl font-bold text-center my-4 p-4 rounded-lg bg-green-50 border-2 border-green-500">{{ target }}: {{ result }}</h5>
         </section>
     {% endif %}
 

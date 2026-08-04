@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+
+{% block main %}
+{% if error %}
+    <h1>Error {{ error.code }}</h1>
+    <p>{{ error.message }}</p>
+{% else %}
+    <h1>Unknown Error</h1>
+    <p>An unexpected error has occurred.</p>
+{% endif %}
+{% endblock %}

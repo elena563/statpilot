@@ -1,15 +1,17 @@
 
 /*loading spinner*/
 document.addEventListener('DOMContentLoaded', function() {
-            const form = document.querySelector('form');
-            const spinner = document.getElementById('spinner');
-            
-            if (form){   /* due to forms dynamism, check element presence before adding event listener */
-                form.addEventListener('submit', function() {
-                    spinner.style.display = 'block';
-                });
-            }
-        });
+    const forms = document.querySelectorAll('form');
+    const spinner = document.getElementById('spinner');
+    
+    forms.forEach((form) => {
+        if (form){   /* due to forms dynamism, check element presence before adding event listener */
+            form.addEventListener('submit', function() {
+                spinner.style.display = 'block';
+            });
+        }
+    })
+});
 
 /*interactive form for modeling section*/      
 const classif = document.getElementById("classif");
@@ -32,3 +34,8 @@ if (regr){
         }
     });
 }
+
+document.querySelector('form').addEventListener('submit', function() {
+    const error = document.getElementById('error-message');
+    if (error) error.style.display = 'none';
+});
