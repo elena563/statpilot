@@ -28,7 +28,7 @@ It was developed as a final project for the CS50x course, showcasing my skills i
 ├── app.py          # Main Flask app
 ├── .github/workflows/ci.yml  # GitHub Actions CI workflow 
 ├── templates/      # HTML pages
-├── static/         # CSS, JS
+├── static/         # CSS, JS, csvs for tests
 │ └─── temp/        # Temporary folder for datasets and plots (not visible in repo)  
 ├── modules/ 
 │ ├── analysis.py

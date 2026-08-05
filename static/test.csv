@@ -1,0 +1,19 @@
+age,score,city,category,review
+25.0,80.5,Milano,A,The food was absolutely amazing! I loved the flavors and the presentation was beautiful.
+30.0,90.0,Roma,B,I had a terrible experience at this restaurant. The service was slow and the food was cold.
+35.0,70.3,Milano,A,The ambiance was perfect for a romantic dinner. The lighting and music created a cozy atmosphere.
+40.0,85.1,Torino,C,"I would highly recommend this place to anyone looking for a great dining experience. The staff was friendly and attentive, and the food was delicious."
+,60.0,Roma,B,The portions were small and overpriced. I expected more for the price I paid.
+28.0,75.0,Torino,C,Horrible
+32.0,95.2,Milano,A,The food was cold and tasteless. I will not be coming back.
+38.0,88.8,Roma,B,"The food was okay, nothing special."
+,92.5,Torino,C,The service was slow and the staff seemed disinterested.
+45.0,78.9,Milano,A,The restaurant was clean and well-maintained. The staff was friendly and accommodating.
+50.0,82.0,Roma,B,The service was exceptional. The waitstaff was attentive and knowledgeable about the menu.
+55.0,91.5,Torino,C,I had a wonderful experience at this restaurant. The food was flavorful and the presentation was beautiful.
+60.0,76.2,Milano,A,The restaurant had a great atmosphere. The lighting and music created a cozy and inviting environment.
+65.0,89.0,Roma,B,The food was absolutely amazing! I loved the flavors and the presentation was beautiful.
+70.0,74.5,Torino,C,I had a terrible experience at this restaurant. The service was slow and the food was cold.
+75.0,70.3,Milano,A,The ambiance was perfect for a romantic dinner. The lighting and music created a cozy atmosphere.
+40.0,85.1,Roma,B,"I would highly recommend this place to anyone looking for a great dining experience. The staff was friendly and attentive, and the food was delicious."
+28.0,60.0,Torino,C,The portions were small and overpriced. I expected more for the price I paid.
