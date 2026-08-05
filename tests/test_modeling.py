@@ -79,7 +79,7 @@ def test_unbalanced_target_warning(unbalanced_df):
     session_id = session_dir.name
 
     _, _, warnings = train_model(unbalanced_df, target="pet", model_type="Logistic Regression", session_id=session_id)
-    assert len(warnings) == 1
+    assert len(warnings) == 2 # One warning for unbalanced target and one for 2 samples class
 
 def test_one_sample_col_error(base_df, one_sample_col):
     session_dir = get_session_dir()  
