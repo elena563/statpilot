@@ -1,0 +1,35 @@
+{
+  "name": "statpilot",
+  "version": "1.0.0",
+  "description": "StatPilot is an interactive web application for statistical data analysis, machine learning modeling, and model explainability, built with Flask and Python. It allows users to upload datasets, perform exploratory data analysis, train machine learning models, and interpret model decisions using explainable AI techniques.  \r It was developed as a final project for the CS50x course, showcasing my skills in web development, data analysis, and machine learning. At the half of 2026, it was improved, fixing bugs and adding strong input validation and automated tests, to make it more robust and user-friendly. Soon, also new features to enhance user experience will be added.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "lint": "eslint static/js/",
+    "format": "prettier --write static/js/ templates/",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elena563/statpilot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/elena563/statpilot/issues"
+  },
+  "homepage": "https://github.com/elena563/statpilot#readme",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.1",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.6"
+  },
+  "dependencies": {
+    "globals": "^17.11.0"
+  }
+}
