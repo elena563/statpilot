@@ -1,9 +1,8 @@
-import shap
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from modules.analysis import get_session_dir
+import shap
+
 from services.session import session_path
 
 
@@ -73,18 +72,18 @@ def explain_global(model, X_test, session_id):
 
     shap.summary_plot(shap_values, X_sub, show=False)
 
-    path = str(session_path(session_id, "distributions.png")).replace("\\", "/")
+    path = str(session_path(session_id, "var-importance.png")).replace("\\", "/")
     plt.savefig(path, dpi=300, bbox_inches="tight")
     plt.close()
 
-    return path
+    return "var-importance.png"
 
 
-def explain_local(obs_index, model, X_test):
+def explain_local(obs_index, model, X_test, session_id):
     shap_values, X_sub, explainer = compute_shap_values(model, X_test)
 
     plots = []
-    session_dir = get_session_dir()
+    session_dir = session_path(session_id, "")
 
     if isinstance(shap_values, list):
         c_idx = 0
@@ -93,22 +92,20 @@ def explain_local(obs_index, model, X_test):
     else:
         base_val = explainer.expected_value
         vals = shap_values[obs_index]
-        if isinstance(base_val, (list, np.ndarray)):
+        if isinstance(base_val, list | np.ndarray):
             base_val = base_val[0]
 
     shap.force_plot(base_val, vals, X_sub.iloc[obs_index], matplotlib=True)
 
     exp = shap.Explanation(values=shap_values[obs_index], base_values=base_val, data=X_sub.iloc[obs_index].values, feature_names=X_sub.columns.tolist())
 
-    path = str(Path(session_dir) / "forceplot.png").replace("\\", "/")
-    plt.savefig(path, dpi=300, bbox_inches="tight")
+    plt.savefig(session_dir / "forceplot.png", dpi=300, bbox_inches="tight")
     plt.close()
-    plots.append(path)
+    plots.append("forceplot.png")
 
     shap.plots.waterfall(exp)
-    path = str(Path(session_dir) / "waterfall.png").replace("\\", "/")
-    plt.savefig(path, dpi=300, bbox_inches="tight")
+    plt.savefig(session_dir / "waterfall.png", dpi=300, bbox_inches="tight")
     plt.close()
-    plots.append(path)
+    plots.append("waterfall.png")
 
     return plots

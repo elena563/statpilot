@@ -1,14 +1,15 @@
 import os
-from pathlib import Path
 import re
 import shutil
-import time
 import threading
+import time
 import uuid
+from pathlib import Path
+
 import onnxruntime as ort
 import pandas as pd
 
-from variables import TEMP_DIR, CLEANUP_MAX_AGE_HOURS, CLEANUP_INTERVAL_HOURS
+from variables import CLEANUP_INTERVAL_HOURS, CLEANUP_MAX_AGE_HOURS, TEMP_DIR
 
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 

@@ -1,20 +1,20 @@
-from flask import Flask
+import json
+
 import numpy as np
 import pandas as pd
-from pandas.api.types import is_string_dtype, infer_dtype
-import json
+from pandas.api.types import infer_dtype, is_string_dtype
 from skl2onnx import to_onnx
 from skl2onnx.common.data_types import FloatTensorType
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingRegressor
-from sklearn.linear_model import LinearRegression, ElasticNet, LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestClassifier
+from sklearn.linear_model import ElasticNet, LinearRegression, LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_error, precision_score, r2_score, recall_score, root_mean_squared_error
-from sklearn.model_selection import train_test_split, cross_val_predict, KFold, StratifiedKFold
+from sklearn.model_selection import KFold, StratifiedKFold, cross_val_predict, train_test_split
 from sklearn.preprocessing import LabelEncoder
+from sklearn.tree import DecisionTreeClassifier
 
-from services.session import session_path
 from modules.analysis import is_text
-from variables import TEST_SIZE, RANDOM_STATE
+from services.session import session_path
+from variables import RANDOM_STATE, TEST_SIZE
 
 
 class WarningCollector:
@@ -149,7 +149,6 @@ def get_model(model_type: str, n_samples: int) -> tuple:
 
 
 def train_model(df: pd.DataFrame, target: str, model_type: str, session_id: str) -> tuple[dict, list, list]:
-
     n_samples = df.shape[0]
     collector = WarningCollector()
     if len(df.columns) > n_samples:
@@ -256,7 +255,7 @@ def test_model(dfx: pd.DataFrame, model, input_data: dict, session_id: str, clas
 
     X = X.astype(dfx.dtypes.to_dict())
     X = pd.get_dummies(X)
-    with open(session_path(session_id, "columns.json"), "r") as f:
+    with open(session_path(session_id, "columns.json")) as f:
         columns = json.load(f)
 
     for col in columns:

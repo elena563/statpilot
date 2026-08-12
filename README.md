@@ -3,7 +3,6 @@
 StatPilot is an interactive web application for statistical data analysis, machine learning modeling, and model explainability, built with Flask and Python. It allows users to upload datasets, perform exploratory data analysis, train machine learning models, and interpret model decisions using explainable AI techniques.  
 It was developed as a final project for the CS50x course, showcasing my skills in web development, data analysis, and machine learning. At the half of 2026, it was improved, fixing bugs and adding strong input validation and automated tests, to make it more robust and user-friendly. Soon, also new features to enhance user experience will be added.
 
-
 ## Features
 
 - 📊 **Data Analysis**: Upload a CSV and get automatic descriptive statistics, visualizations, and insights.
@@ -12,7 +11,7 @@ It was developed as a final project for the CS50x course, showcasing my skills i
 
 ## Technologies
 
-**Backend:**  
+**Backend:**
 
 [![Flask](https://img.shields.io/badge/Flask-000000?style=flat&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)  
 [![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)  
@@ -20,34 +19,34 @@ It was developed as a final project for the CS50x course, showcasing my skills i
 **Libraries:** Pandas, Scikit-learn, Matplotlib, Seaborn, NLTK, Wordcloud, shap  
 **Design:** Figma, for simple logo - no AI :)
 
-
 ## Project Structure
+
 ```
 /project-root
 │
 ├── app.py          # Main Flask app
-├── .github/workflows/ci.yml  # GitHub Actions CI workflow 
+├── .github/workflows/ci.yml  # GitHub Actions CI workflow
 ├── templates/      # HTML pages
 ├── static/         # CSS, JS, csvs for tests
-│ └─── temp/        # Temporary folder for datasets and plots (not visible in repo)  
-├── modules/ 
+├── temp/        # Temporary folder for datasets and plots (not visible in repo)
+├── modules/
 │ ├── analysis.py
 │ ├── modeling.py
 │ └── explainability.py
 ├── tests/          # unit tests for the application
 │ ├── conftest.py   # pytest configuration file
-│ ├── test_analysis.py  
-│ ├── test_app.py  
-│ ├── test_modeling.py  
-│ └── test_explainability.py  
-├── requirements.txt  
-├── requirements-dev.txt  
+│ ├── test_analysis.py
+│ ├── test_app.py
+│ ├── test_modeling.py
+│ └── test_explainability.py
+├── requirements.txt
+├── requirements-dev.txt
 └── README.md
 ```
 
 ## Usage
 
-**Access the app [here](https://statpilot.onrender.com/)** 
+**Access the app [here](https://statpilot.onrender.com/)**
 
 No installation required, just open the app and start exploring your data.
 Due to render free limitations, it could take a few minutes to load.

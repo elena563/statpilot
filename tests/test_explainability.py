@@ -1,4 +1,5 @@
 import pandas as pd
+
 from modules.explainability import preprocess
 
 
@@ -24,4 +25,4 @@ def test_preprocess_fillna_with_mean():
 def test_preprocess_returns_float():
     X = pd.DataFrame({"a": [1, 2], "b": [True, False]})
     out = preprocess(X)
-    assert (out.dtypes == float).all()
+    assert (out.dtypes == "float").all()

@@ -1,14 +1,17 @@
+import json
 import os
-from flask import Flask, render_template, request, send_file
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
-import json
+from flask import Flask, abort, render_template, request, send_file
 
-from modules.analysis import analyze_csv, get_session_dir, read_csv_sep
-from modules.modeling import train_model, test_model, DatasetValidationError, validate_test_data
+from modules.analysis import analyze_csv, read_csv_sep
 from modules.explainability import explain_global, explain_local
-from services.session import validate_session_id, session_path, load_dataframe, load_model, init_cleanup
+from modules.modeling import DatasetValidationError, test_model, train_model, validate_test_data
+from services.session import get_session_dir, init_cleanup, load_dataframe, load_model, session_path, validate_session_id
+from variables import TEMP_DIR
 
 load_dotenv(override=True)
 
@@ -25,6 +28,16 @@ def not_found(e):
 @app.errorhandler(500)
 def server_error(e):
     return render_template("error.html", error="Internal server error", code=500), 500
+
+
+@app.errorhandler(400)
+def bad_request(e):
+    return render_template("error.html", error="Bad request", code=400), 400
+
+
+@app.errorhandler(403)
+def forbidden(e):
+    return render_template("error.html", error="Forbidden", code=403), 403
 
 
 # prevent caching
@@ -56,12 +69,14 @@ def analyze():
             if file_ext.lower() != ".csv":
                 return render_template("analysis.html", error="Dataset file must be a CSV (.csv)")
 
+            session_dir = get_session_dir()
+            session_id = session_dir.name
             try:
-                results = analyze_csv(file)
+                results = analyze_csv(file, session_dir)
             except Exception as e:
                 return render_template("analysis.html", error=f"Error occurred while analyzing the dataset: {str(e)}")
 
-            return render_template("analysis.html", results=results)
+            return render_template("analysis.html", results=results, session_id=session_id)
         else:
             return render_template("analysis.html")
     except Exception as e:
@@ -70,7 +85,6 @@ def analyze():
 
 @app.route("/model", methods=["GET", "POST"])
 def model():
-
     if request.method == "POST":
         form_type = request.form.get("form_type")
 
@@ -165,7 +179,6 @@ def model():
 
 @app.route("/explain", methods=["GET", "POST"])
 def explain():
-
     if request.method == "POST":
         form_type = request.form.get("form_type")
 
@@ -224,7 +237,7 @@ def explain():
                 return render_template("explainability.html", error=f"Error loading session data: {str(e)}")
 
             try:
-                summary_plot = str(session_path(session_id, "distributions.png")).replace("\\", "/")
+                summary_plot = "var-importance.png"
                 obs_index = int(request.form.get("obs"))
             except (TypeError, ValueError):
                 return render_template("explainability.html", error="Observation index must be an integer", summary_plot=summary_plot, session_id=session_id)
@@ -245,7 +258,7 @@ def explain():
             row_list = row.flatten().tolist()
 
             try:
-                plots = explain_local(obs_index, model, X_test)
+                plots = explain_local(obs_index, model, X_test, session_id)
             except Exception as e:
                 return render_template("explainability.html", error=f"Error generating local explanation: {str(e)}")
 
@@ -258,8 +271,8 @@ def explain():
 def download():
     try:
         session_id = validate_session_id(request.args.get("session_id"))
-    except ValueError as e:
-        return render_template("download.html", error=str(e))
+    except ValueError:
+        abort(403)
 
     file = request.args.get("file")
 
@@ -268,13 +281,32 @@ def download():
     elif file == "xtest":
         filename = "xtest.csv"
     else:
-        return "Invalid file parameter", 400
+        abort(400)
 
     path = session_path(session_id, filename)
     if not path.exists():
-        return "File not found", 404
+        abort(404)
 
     return send_file(path, as_attachment=True, download_name=filename)
+
+
+@app.route("/temp/<session_id>/<filename>")
+def serve_file(session_id, filename):
+    try:
+        session_id = validate_session_id(session_id)
+    except ValueError:
+        abort(403)
+
+    # path traversal guard
+    safe_dir = Path(TEMP_DIR).resolve()
+    target = (safe_dir / session_id / filename).resolve()
+    if not str(target).startswith(str(safe_dir)):
+        abort(400)
+
+    if not target.exists():
+        abort(404)
+
+    return send_file(target)
 
 
 @app.route("/learn")

@@ -105,8 +105,8 @@
     have the strongest influence on model decisions in general.
   </p>
   <img
-    src="{{ url_for('static', filename=summary_plot.split('static/')[-1]) }}"
-    width="500"
+    src="{{ url_for('serve_file', session_id=session_id, filename=summary_plot) }}"
+    width="700"
   />
 </section>
 <section class="bg-white my-8 py-6">
@@ -162,7 +162,7 @@
   </p>
   {% for plot in plots %}
   <img
-    src="{{ url_for('static', filename=plot.split('static/')[-1]) }}"
+    src="{{ url_for('serve_file', session_id=session_id, filename=plot) }}"
     width="700"
   />
   {% endfor %}

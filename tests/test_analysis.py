@@ -1,24 +1,25 @@
 import pandas as pd
 import pytest
-from modules.analysis import is_text, read_csv_sep, analyze_num, analyze_qual, analyze_text
+
+from modules.analysis import analyze_num, analyze_qual, analyze_text, is_text, read_csv_sep
 
 
 def test_is_text():
     # categorical data
     cat_series = pd.Series(["Pizza", "Ananas", "Sushi", "Pizza", "Pasta", "Salad", "Pizza Margherita", "Burger", "Tacos", "Mexican Burrito", "Pizza", "Ramen"])
-    assert is_text(cat_series) == False
+    assert not is_text(cat_series)
 
     # numeric data
     numeric_series = pd.Series([1, 2, 3, 4, 5])
-    assert is_text(numeric_series) == False
+    assert not is_text(numeric_series)
 
     # boolean data
     bool_series = pd.Series([True, False, True, False])
-    assert is_text(bool_series) == False
+    assert not is_text(bool_series)
 
     # empty series
     empty_series = pd.Series([])
-    assert is_text(empty_series) == False
+    assert not is_text(empty_series)
 
     # free text data
     free_text_series = pd.Series(
@@ -32,7 +33,7 @@ def test_is_text():
             "The food was cold and tasteless. I will not be coming back.",
         ]
     )
-    assert is_text(free_text_series) == True
+    assert is_text(free_text_series)
 
 
 def test_analyze_num(base_df, tmp_path):
@@ -59,6 +60,6 @@ def test_analyze_text(base_df, tmp_path):
 def test_read_csv_sep(tmp_path, delimiter):
     csv = tmp_path / "test.csv"
     csv.write_text(f"a{delimiter}b{delimiter}c\n1{delimiter}2{delimiter}3\n4{delimiter}5{delimiter}6")
-    with open(csv, "r") as f:
+    with open(csv) as f:
         df = read_csv_sep(f)
     assert df.shape == (2, 3)

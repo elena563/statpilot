@@ -1,19 +1,18 @@
-import os
-from collections import Counter
 import csv
 import math
-import nltk
-from nltk.corpus import stopwords
-import pandas as pd
+import os
+from collections import Counter
 from pathlib import Path
-import seaborn as sns
-from wordcloud import WordCloud
+
 import matplotlib
+import nltk
+import pandas as pd
+import seaborn as sns
+from nltk.corpus import stopwords
+from wordcloud import WordCloud
 
 matplotlib.use("Agg")  # backup setting for web application
 from matplotlib import pyplot as plt
-
-from services.session import get_session_dir
 
 nltk.download("stopwords")
 
@@ -53,7 +52,7 @@ def is_text(series: pd.Series, score_threshold: int = 2) -> bool:
 
 
 def read_csv_sep(file) -> pd.DataFrame:
-    if isinstance(file, (str, os.PathLike)):
+    if isinstance(file, str | os.PathLike):
         file = open(file, "rb")
     file.seek(0)
     sample = file.read(2048)
@@ -119,7 +118,7 @@ def analyze_num(df, num_cols, session_dir):
     path = str(Path(session_dir) / "distributions.png").replace("\\", "/")
     plt.savefig(path, dpi=300, bbox_inches="tight")
     plt.close()
-    plots.append(path)
+    plots.append("distributions.png")
 
     if len(cols) >= 2:
         # pairplot
@@ -128,7 +127,7 @@ def analyze_num(df, num_cols, session_dir):
         path = str(Path(session_dir) / "features.png").replace("\\", "/")
         figure.savefig(path, dpi=300)
         plt.close()
-        plots.append(path)
+        plots.append("features.png")
 
         # correlation heatmap
         corr = num_df.corr()
@@ -138,7 +137,7 @@ def analyze_num(df, num_cols, session_dir):
         path = str(Path(session_dir) / "correlations.png").replace("\\", "/")
         figure.savefig(path, dpi=300, bbox_inches="tight")
         plt.close()
-        plots.append(path)
+        plots.append("correlations.png")
 
     return stats, plots
 
@@ -178,7 +177,7 @@ def analyze_qual(df, qual_cols, session_dir):
     path = str(Path(session_dir) / "qual_distributions.png").replace("\\", "/")
     plt.savefig(path, dpi=300, bbox_inches="tight")
     plt.close()
-    plots.append(path)
+    plots.append("qual_distributions.png")
 
     return stats, plots
 
@@ -214,7 +213,6 @@ def analyze_text(df, text_cols, session_dir):
 
     # plots
     plots = []
-    print(text_cols)
     for col in text_cols:
         length = df[col].astype(str).str.split().apply(lambda x: len(x) if isinstance(x, list) else 0)
         length.hist(bins=30, color="lightblue", edgecolor="black")
@@ -222,10 +220,11 @@ def analyze_text(df, text_cols, session_dir):
         plt.ylabel("Frequency")
         safe_col = "".join(c for c in col if c.isalnum())
         plt.title(f"Text length distribution - {safe_col}")
-        path = str(Path(session_dir) / f"textlength{safe_col}.png").replace("\\", "/")
+        name = f"textlength{safe_col}.png"
+        path = str(Path(session_dir) / name).replace("\\", "/")
         plt.savefig(path)
         plt.close()
-        plots.append(path)
+        plots.append(name)
 
     # word frequency plot
     if not common:
@@ -239,7 +238,7 @@ def analyze_text(df, text_cols, session_dir):
     path = str(Path(session_dir) / "wordfrequency.png").replace("\\", "/")
     plt.savefig(path)
     plt.close()
-    plots.append(path)
+    plots.append("wordfrequency.png")
 
     # wordcloud plot
     if text.strip():
@@ -249,13 +248,12 @@ def analyze_text(df, text_cols, session_dir):
         path = str(Path(session_dir) / "wordcloud.png").replace("\\", "/")
         plt.savefig(path)
         plt.close()
-        plots.append(path)
+        plots.append("wordcloud.png")
 
     return stats, plots
 
 
-def analyze_csv(file):
-    session_dir = get_session_dir()
+def analyze_csv(file, session_dir):
     path = session_dir / "dataset.csv"
     file.save(path)
     try:
@@ -271,10 +269,6 @@ def analyze_csv(file):
     cat_cols = df.select_dtypes(include="object").columns.tolist()
     text_cols = [col for col in cat_cols if is_text(df[col])]
     qual_cols = [col for col in cat_cols if col not in text_cols]
-
-    print(f"Numerical columns: {num_cols}")
-    print(f"Categorical columns: {qual_cols}")
-    print(f"Text columns: {text_cols}")
 
     # get stats based on column types
     results = {}

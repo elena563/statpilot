@@ -128,7 +128,7 @@
     {% for plot in results.numerical[1] %}
     <img
       class="image"
-      src="{{ url_for('static', filename=plot.split('static/')[-1]) }}"
+      src="{{ url_for('serve_file', session_id=session_id, filename=plot) }}"
       alt="numerical analysis plot"
     />
     {% endfor %}
@@ -166,7 +166,7 @@
     {% for plot in results.categorical[1] %}
     <img
       class="image"
-      src="{{ url_for('static', filename=plot.split('static/')[-1]) }}"
+      src="{{ url_for('serve_file', session_id=session_id, filename=plot) }}"
       alt="categorical analysis plot"
     />
     {% endfor %}
@@ -204,7 +204,7 @@
     {% for plot in results.text[1] %}
     <img
       class="image"
-      src="{{ url_for('static', filename=plot.split('static/')[-1]) }}"
+      src="{{ url_for('serve_file', session_id=session_id, filename=plot) }}"
       alt="text analysis plot"
     />
     {% endfor %}

@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from modules.modeling import train_model, DatasetValidationError, validate_test_data
+from modules.modeling import DatasetValidationError, train_model, validate_test_data
 from services.session import get_session_dir
 
 
