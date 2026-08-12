@@ -2,9 +2,10 @@ import pandas as pd
 import pytest
 from modules.analysis import is_text, read_csv_sep, analyze_num, analyze_qual, analyze_text
 
+
 def test_is_text():
     # categorical data
-    cat_series = pd.Series(['Pizza', 'Ananas', 'Sushi', 'Pizza', 'Pasta', 'Salad', 'Pizza Margherita', 'Burger', 'Tacos', 'Mexican Burrito', 'Pizza', 'Ramen'])
+    cat_series = pd.Series(["Pizza", "Ananas", "Sushi", "Pizza", "Pasta", "Salad", "Pizza Margherita", "Burger", "Tacos", "Mexican Burrito", "Pizza", "Ramen"])
     assert is_text(cat_series) == False
 
     # numeric data
@@ -20,12 +21,17 @@ def test_is_text():
     assert is_text(empty_series) == False
 
     # free text data
-    free_text_series = pd.Series(['The food was absolutely amazing! I loved the flavors and the presentation was beautiful.',
-                                  'I had a terrible experience at this restaurant. The service was slow and the food was cold.',
-                                  'The ambiance was perfect for a romantic dinner. The lighting and music created a cozy atmosphere.',
-                                  'I would highly recommend this place to anyone looking for a great dining experience. The staff was friendly and attentive, and the food was delicious.',
-                                  'The portions were small and overpriced. I expected more for the price I paid.',
-                                  'Horrible', 'The food was cold and tasteless. I will not be coming back.',])
+    free_text_series = pd.Series(
+        [
+            "The food was absolutely amazing! I loved the flavors and the presentation was beautiful.",
+            "I had a terrible experience at this restaurant. The service was slow and the food was cold.",
+            "The ambiance was perfect for a romantic dinner. The lighting and music created a cozy atmosphere.",
+            "I would highly recommend this place to anyone looking for a great dining experience. The staff was friendly and attentive, and the food was delicious.",
+            "The portions were small and overpriced. I expected more for the price I paid.",
+            "Horrible",
+            "The food was cold and tasteless. I will not be coming back.",
+        ]
+    )
     assert is_text(free_text_series) == True
 
 
@@ -35,16 +41,19 @@ def test_analyze_num(base_df, tmp_path):
     assert "score" in stats
     assert len(plots) > 0
 
+
 def test_analyze_qual(base_df, tmp_path):
     stats, plots = analyze_qual(base_df, ["city", "category"], tmp_path)
     assert "city" in stats
     assert "category" in stats
     assert len(plots) > 0
 
+
 def test_analyze_text(base_df, tmp_path):
     stats, plots = analyze_text(base_df, ["review"], tmp_path)
     assert "review" in stats
     assert len(plots) > 0
+
 
 @pytest.mark.parametrize("delimiter", [",", ";", "\t", "|"])
 def test_read_csv_sep(tmp_path, delimiter):

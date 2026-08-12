@@ -1,7 +1,7 @@
 from pathlib import Path
 
-TEST_SIZE=0.2
-RANDOM_STATE=42
+TEST_SIZE = 0.2
+RANDOM_STATE = 42
 TEMP_DIR = str(Path(__file__).parent / "static" / "temp")
 CLEANUP_MAX_AGE_HOURS = 24
 CLEANUP_INTERVAL_HOURS = 12

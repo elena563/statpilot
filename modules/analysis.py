@@ -9,12 +9,13 @@ from pathlib import Path
 import seaborn as sns
 from wordcloud import WordCloud
 import matplotlib
-matplotlib.use('Agg')  # backup setting for web application
+
+matplotlib.use("Agg")  # backup setting for web application
 from matplotlib import pyplot as plt
 
 from services.session import get_session_dir
 
-nltk.download('stopwords')
+nltk.download("stopwords")
 
 
 def is_text(series: pd.Series, score_threshold: int = 2) -> bool:
@@ -24,11 +25,11 @@ def is_text(series: pd.Series, score_threshold: int = 2) -> bool:
     """
     if pd.api.types.is_numeric_dtype(series) or pd.api.types.is_datetime64_any_dtype(series):
         return False
-    
+
     s = series.dropna().astype(str)
     if len(s) == 0:
         return False
-    
+
     score = 0
 
     lengths = s.apply(len)
@@ -46,8 +47,8 @@ def is_text(series: pd.Series, score_threshold: int = 2) -> bool:
     if lengths.median() > 20:
         score += 1
 
-    #print(f'lengths.mean(): {lengths.mean()}, lengths.std(): {lengths.std()}, cardinality_ratio: {cardinality_ratio}, avg_words: {avg_words}, lengths.median(): {lengths.median()}, score: {score}')
-    
+    # print(f'lengths.mean(): {lengths.mean()}, lengths.std(): {lengths.std()}, cardinality_ratio: {cardinality_ratio}, avg_words: {avg_words}, lengths.median(): {lengths.median()}, score: {score}')
+
     return score >= score_threshold
 
 
@@ -57,16 +58,16 @@ def read_csv_sep(file) -> pd.DataFrame:
     file.seek(0)
     sample = file.read(2048)
     if isinstance(sample, bytes):
-        sample = sample.decode('utf-8', errors='ignore')
+        sample = sample.decode("utf-8", errors="ignore")
     file.seek(0)
-    
+
     sniffer = csv.Sniffer()
     try:
-        dialect = sniffer.sniff(sample, delimiters=',;\t|')
+        dialect = sniffer.sniff(sample, delimiters=",;\t|")
         sep = dialect.delimiter
         header = sniffer.has_header(sample)
     except csv.Error:
-        sep = ','
+        sep = ","
         header = True
 
     try:
@@ -83,6 +84,7 @@ def read_csv_sep(file) -> pd.DataFrame:
 
     raise ValueError("Can't recognize separator")
 
+
 def analyze_num(df, num_cols, session_dir):
     num_df = df[num_cols]
     # descriptive stats
@@ -93,39 +95,37 @@ def analyze_num(df, num_cols, session_dir):
 
     cols = num_df.columns
     n = len(cols)
-    n_plots = n * 2    # 2 plots each variable
-    ncols = 6          # 6 plots each row
-    nrows = math.ceil(n_plots / ncols) 
+    n_plots = n * 2  # 2 plots each variable
+    ncols = 6  # 6 plots each row
+    nrows = math.ceil(n_plots / ncols)
 
     fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(ncols * 3, nrows * 3))
     axes = axes.flatten()  # necessary to iterate axes[i]
 
     for i, col in enumerate(cols):
-        axes[i * 2].boxplot(num_df[col], notch=True, patch_artist=True,
-                            flierprops=dict(marker='o', markersize=8, markerfacecolor='red'),
-                            widths=0.3)
-        axes[i * 2].set_title(f'Boxplot: {col}')
+        axes[i * 2].boxplot(num_df[col], notch=True, patch_artist=True, flierprops=dict(marker="o", markersize=8, markerfacecolor="red"), widths=0.3)
+        axes[i * 2].set_title(f"Boxplot: {col}")
 
-        axes[i * 2 + 1].hist(num_df[col], bins=20, color='lightblue', edgecolor='black')
-        axes[i * 2 + 1].set_title(f'Histogram: {col}')
+        axes[i * 2 + 1].hist(num_df[col], bins=20, color="lightblue", edgecolor="black")
+        axes[i * 2 + 1].set_title(f"Histogram: {col}")
         axes[i * 2 + 1].set_xlabel(col)
-        axes[i * 2 + 1].set_ylabel('Frequency')
+        axes[i * 2 + 1].set_ylabel("Frequency")
 
     # delete remaining axes
     for j in range(n * 2, len(axes)):
         fig.delaxes(axes[j])
 
     plt.tight_layout()
-    path = str(Path(session_dir) / "distributions.png").replace('\\', '/')
-    plt.savefig(path, dpi=300, bbox_inches='tight')
+    path = str(Path(session_dir) / "distributions.png").replace("\\", "/")
+    plt.savefig(path, dpi=300, bbox_inches="tight")
     plt.close()
     plots.append(path)
 
     if len(cols) >= 2:
         # pairplot
         pairplot = sns.pairplot(num_df)
-        figure = pairplot.figure  
-        path = str(Path(session_dir) / "features.png").replace('\\', '/')
+        figure = pairplot.figure
+        path = str(Path(session_dir) / "features.png").replace("\\", "/")
         figure.savefig(path, dpi=300)
         plt.close()
         plots.append(path)
@@ -133,10 +133,10 @@ def analyze_num(df, num_cols, session_dir):
         # correlation heatmap
         corr = num_df.corr()
         cmap = sns.diverging_palette(500, 10, as_cmap=True)
-        heatmap=sns.heatmap(corr,  linewidths=1, cmap=cmap, center=0)
-        figure = heatmap.figure  
-        path = str(Path(session_dir) / "correlations.png").replace('\\', '/')
-        figure.savefig(path, dpi=300, bbox_inches='tight')
+        heatmap = sns.heatmap(corr, linewidths=1, cmap=cmap, center=0)
+        figure = heatmap.figure
+        path = str(Path(session_dir) / "correlations.png").replace("\\", "/")
+        figure.savefig(path, dpi=300, bbox_inches="tight")
         plt.close()
         plots.append(path)
 
@@ -146,56 +146,48 @@ def analyze_num(df, num_cols, session_dir):
 def analyze_qual(df, qual_cols, session_dir):
     qual_df = df[qual_cols]
     stats = qual_df.describe().round(3).to_dict()
-    
-    # plots 
+
+    # plots
     plots = []
 
     cols = qual_df.columns
     n = len(cols)
-    ncols = 2      
-    nrows = math.ceil(n / ncols) 
+    ncols = 2
+    nrows = math.ceil(n / ncols)
 
     fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(ncols * 3, nrows * 3))
     axes = axes.flatten()  # necessary to iterate axes[i]
 
     for i, col in enumerate(cols):
         order = qual_df[col].value_counts().index
-        
+
         palette = sns.color_palette("Set2", len(order))
-        
-        sns.countplot(
-            data=qual_df, 
-            x=col, 
-            hue=col,
-            order=order, 
-            palette=palette, 
-            edgecolor='black', 
-            legend=False,
-            ax=axes[i]
-        )
-        
+
+        sns.countplot(data=qual_df, x=col, hue=col, order=order, palette=palette, edgecolor="black", legend=False, ax=axes[i])
+
         axes[i].set_title(f"Barplot - {col}", fontsize=12)
         axes[i].set_ylabel("Count", fontsize=10)
         axes[i].set_xlabel("")
-        axes[i].tick_params(axis='x', rotation=45)   
+        axes[i].tick_params(axis="x", rotation=45)
 
     # delete remaining axes
     for j in range(n, len(axes)):
         fig.delaxes(axes[j])
 
     plt.tight_layout()
-    path = str(Path(session_dir) / "qual_distributions.png").replace('\\', '/')
-    plt.savefig(path, dpi=300, bbox_inches='tight')
+    path = str(Path(session_dir) / "qual_distributions.png").replace("\\", "/")
+    plt.savefig(path, dpi=300, bbox_inches="tight")
     plt.close()
     plots.append(path)
 
     return stats, plots
 
+
 def analyze_text(df, text_cols, session_dir):
-    text = " ".join(df[col].astype(str).str.lower().str.cat(sep=' ', na_rep='') for col in text_cols)
+    text = " ".join(df[col].astype(str).str.lower().str.cat(sep=" ", na_rep="") for col in text_cols)
 
     # stopwords
-    stop_words = set(stopwords.words('english'))
+    stop_words = set(stopwords.words("english"))
 
     stats = {}
     for col in text_cols:
@@ -203,16 +195,16 @@ def analyze_text(df, text_cols, session_dir):
         n = len(serie)
         total_chars = serie.str.len()
         total_words = serie.str.split().apply(lambda x: len(x) if isinstance(x, list) else 0)
-        
+
         row = {
-            'count': n,
-            'avg_chars': round(total_chars.mean(), 3),
-            'min_chars': total_chars.min(),
-            'max_chars': total_chars.max(),
-            'avg_words': round(total_words.mean(), 3),
-            'min_words': total_words.min(),
-            'max_words': total_words.max(),
-            'unique_texts': serie.nunique()
+            "count": n,
+            "avg_chars": round(total_chars.mean(), 3),
+            "min_chars": total_chars.min(),
+            "max_chars": total_chars.max(),
+            "avg_words": round(total_words.mean(), 3),
+            "min_words": total_words.min(),
+            "max_words": total_words.max(),
+            "unique_texts": serie.nunique(),
         }
         stats[col] = row
 
@@ -225,12 +217,12 @@ def analyze_text(df, text_cols, session_dir):
     print(text_cols)
     for col in text_cols:
         length = df[col].astype(str).str.split().apply(lambda x: len(x) if isinstance(x, list) else 0)
-        length.hist(bins=30, color='lightblue', edgecolor='black')
+        length.hist(bins=30, color="lightblue", edgecolor="black")
         plt.xlabel("Words number")
         plt.ylabel("Frequency")
         safe_col = "".join(c for c in col if c.isalnum())
         plt.title(f"Text length distribution - {safe_col}")
-        path = str(Path(session_dir) / f"textlength{safe_col}.png").replace('\\', '/')
+        path = str(Path(session_dir) / f"textlength{safe_col}.png").replace("\\", "/")
         plt.savefig(path)
         plt.close()
         plots.append(path)
@@ -241,37 +233,38 @@ def analyze_text(df, text_cols, session_dir):
         return stats, plots
     else:
         labels, values = zip(*common)
-    plt.barh(labels, values, color='lightblue', edgecolor='black')
+    plt.barh(labels, values, color="lightblue", edgecolor="black")
     plt.title("Top 20 most frequent words")
     plt.tight_layout()
-    path = str(Path(session_dir) / "wordfrequency.png").replace('\\', '/')
+    path = str(Path(session_dir) / "wordfrequency.png").replace("\\", "/")
     plt.savefig(path)
     plt.close()
     plots.append(path)
 
     # wordcloud plot
     if text.strip():
-        cloud = WordCloud(width=800, height=500, background_color='white').generate(text)
-        plt.imshow(cloud, interpolation='bilinear')
-        plt.axis('off')
-        path = str(Path(session_dir) / "wordcloud.png").replace('\\', '/')
+        cloud = WordCloud(width=800, height=500, background_color="white").generate(text)
+        plt.imshow(cloud, interpolation="bilinear")
+        plt.axis("off")
+        path = str(Path(session_dir) / "wordcloud.png").replace("\\", "/")
         plt.savefig(path)
         plt.close()
         plots.append(path)
 
     return stats, plots
 
+
 def analyze_csv(file):
     session_dir = get_session_dir()
     path = session_dir / "dataset.csv"
-    file.save(path) 
+    file.save(path)
     try:
         df = read_csv_sep(file)
     except ValueError:
         raise ValueError("Can't read CSV, check the separator and encoding")
 
-    cols = [col for col in df.columns if 'date' not in col.lower()]
-    df= df[cols]
+    cols = [col for col in df.columns if "date" not in col.lower()]
+    df = df[cols]
 
     # analyze variable types
     num_cols = df.select_dtypes(include="number").columns.tolist()
@@ -284,7 +277,7 @@ def analyze_csv(file):
     print(f"Text columns: {text_cols}")
 
     # get stats based on column types
-    results={}
+    results = {}
     if num_cols:
         results["numerical"] = analyze_num(df, num_cols, session_dir)
     if qual_cols:

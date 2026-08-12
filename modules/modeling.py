@@ -16,74 +16,69 @@ from services.session import session_path
 from modules.analysis import is_text
 from variables import TEST_SIZE, RANDOM_STATE
 
+
 class WarningCollector:
     def __init__(self):
         self.warnings = []
-    
+
     def add(self, msg: str):
         self.warnings.append(msg)
 
+
 class DatasetValidationError(Exception):
     """Custom exception for dataset validation errors."""
+
     pass
+
 
 def is_cat(col):
     return is_string_dtype(col) or isinstance(col.dtype, pd.CategoricalDtype)
 
+
 def validate_dtypes(df: pd.DataFrame):
     """Validate data types in the DataFrame before encoding."""
     for col in df.columns:
-        if 'mixed' in infer_dtype(df[col]):
-            raise DatasetValidationError(
-                f"Column '{col}' contains mixed data types. "
-                "Clean the column before training."
-            )
+        if "mixed" in infer_dtype(df[col]):
+            raise DatasetValidationError(f"Column '{col}' contains mixed data types. Clean the column before training.")
+
 
 def validate_dim(X: pd.DataFrame, y: np.ndarray, target_type: str, collector: WarningCollector):
     n_samples = len(X)
 
     if n_samples < 10:
-        raise DatasetValidationError(
-            f"Dataset too small ({n_samples} samples). "
-            "At least 10 samples are required to train a model."
-        )
+        raise DatasetValidationError(f"Dataset too small ({n_samples} samples). At least 10 samples are required to train a model.")
 
-    if target_type == 'classif':
+    if target_type == "classif":
         classes, counts = np.unique(y, return_counts=True)
         n_classes = len(classes)
 
         min_samples_per_class = counts.min()
         if min_samples_per_class < 2:
-            raise DatasetValidationError(
-                "Found one or more classes with only 1 sample in the dataset. "
-                "Each class must have at least 2 samples to allow for validation."
-            )
-        
+            raise DatasetValidationError("Found one or more classes with only 1 sample in the dataset. Each class must have at least 2 samples to allow for validation.")
+
         minority_percentage = (min_samples_per_class / n_samples) * 100
         if minority_percentage < 5:
             collector.add(
                 f"The dataset has {n_samples} rows but the smallest class has only {min_samples_per_class} samples "
                 f"({minority_percentage:.2f}% of the dataset). This may lead to unreliable model performance."
             )
-            
+
         if n_samples / n_classes < 3:
-            raise DatasetValidationError(
-                f"The dataset has {n_samples} rows but {n_classes} different classes. "
-                "There are too few rows per class to create a valid Train/Test split."
-            )
+            raise DatasetValidationError(f"The dataset has {n_samples} rows but {n_classes} different classes. There are too few rows per class to create a valid Train/Test split.")
 
     if X.shape[1] == 0:
         raise DatasetValidationError("The dataset does not contain valid features for training.")
-    
+
     for col in X.columns:
         col_nunique = X[col].nunique()
         if col_nunique > 20 and col_nunique > n_samples * 0.3 and is_cat(X[col]):
             collector.add(f"Column '{col}' has high cardinality ({col_nunique} unique values)...")
 
+
 def preproc_df(df: pd.DataFrame, target: str, session_id: str, collector: WarningCollector) -> tuple[pd.DataFrame, np.ndarray, str]:
     cols_to_drop = [col for col in df.columns if col != target and df[col].nunique() <= 1]
     df.drop(columns=cols_to_drop, inplace=True)
-    
+
     df.dropna(inplace=True)
     if len(df) == 0:
         raise DatasetValidationError("Dataset remains empty after dropping NaN values.")
@@ -103,12 +98,12 @@ def preproc_df(df: pd.DataFrame, target: str, session_id: str, collector: Warnin
     y_raw = df[target]
 
     if is_cat(y_raw):
-        target_type = 'classif'
+        target_type = "classif"
     else:
-        target_type = 'regr'
+        target_type = "regr"
 
     label_encoder = None
-    if target_type == 'classif':
+    if target_type == "classif":
         label_encoder = LabelEncoder()
         y = label_encoder.fit_transform(y_raw)
     else:
@@ -119,47 +114,46 @@ def preproc_df(df: pd.DataFrame, target: str, session_id: str, collector: Warnin
     if len(X) == 0:
         raise DatasetValidationError("No valid features remain after dropping the target column.")
 
-    X = pd.get_dummies(X).astype('float32') # then switch to ColumnTransformer
+    X = pd.get_dummies(X).astype("float32")  # then switch to ColumnTransformer
     X_columns = X.columns.tolist()
     with open(session_path(session_id, "columns.json"), "w") as f:
         json.dump(X_columns, f)
 
     return X, y, target_type
 
+
 def get_model(model_type: str, n_samples: int) -> tuple:
     max_depth_val = 5 if n_samples < 50 else None
 
     match model_type:
-        case 'Linear Regression':
+        case "Linear Regression":
             model = LinearRegression()
-            task = 'regr'
-        case 'Elastic Net Regression':
+            task = "regr"
+        case "Elastic Net Regression":
             model = ElasticNet(alpha=1.0, l1_ratio=0.5, max_iter=2000, random_state=42)
-            task = 'regr'
-        case 'Gradient Boosting Regression':
+            task = "regr"
+        case "Gradient Boosting Regression":
             model = GradientBoostingRegressor(n_estimators=100, max_depth=3, random_state=42)
-            task = 'regr'
-        case 'Logistic Regression':
-            model = LogisticRegression(max_iter=1000, class_weight='balanced', solver='lbfgs', random_state=42)
-            task = 'classif'
-        case 'Random Forest':
-            model = RandomForestClassifier(n_estimators=100, max_depth=max_depth_val, class_weight='balanced', random_state=42)
-            task = 'classif'
-        case 'Decision Tree':
-            model = DecisionTreeClassifier(max_depth=max_depth_val, class_weight='balanced', random_state=42) 
-            task = 'classif'
+            task = "regr"
+        case "Logistic Regression":
+            model = LogisticRegression(max_iter=1000, class_weight="balanced", solver="lbfgs", random_state=42)
+            task = "classif"
+        case "Random Forest":
+            model = RandomForestClassifier(n_estimators=100, max_depth=max_depth_val, class_weight="balanced", random_state=42)
+            task = "classif"
+        case "Decision Tree":
+            model = DecisionTreeClassifier(max_depth=max_depth_val, class_weight="balanced", random_state=42)
+            task = "classif"
 
     return model, task
+
 
 def train_model(df: pd.DataFrame, target: str, model_type: str, session_id: str) -> tuple[dict, list, list]:
 
     n_samples = df.shape[0]
     collector = WarningCollector()
     if len(df.columns) > n_samples:
-        collector.add(
-            f"Dataset has {len(df.columns)} columns but only {n_samples} rows. "
-            "There are too many features for the number of samples."
-        )
+        collector.add(f"Dataset has {len(df.columns)} columns but only {n_samples} rows. There are too many features for the number of samples.")
 
     validate_dtypes(df)
     X, y, target_type = preproc_df(df, target, session_id, collector)
@@ -173,25 +167,23 @@ def train_model(df: pd.DataFrame, target: str, model_type: str, session_id: str)
     if task != target_type:
         raise ValueError(f"Model '{model_type}' not suitable for target '{target}'")
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y if task == 'classif' else None
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y if task == "classif" else None)
 
     if n_samples < 30:  # cross-validation for small datasets
         _, counts = np.unique(y, return_counts=True)
         min_samples_per_class = counts.min()
-        
+
         desired_splits = 3 if n_samples < 15 else 5
         n_splits = max(2, min(desired_splits, min_samples_per_class))
-        
-        if task == 'classif':
+
+        if task == "classif":
             cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE)
         else:
             cv = KFold(n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE)
 
         y_true = y
         y_pred = cross_val_predict(model, X, y, cv=cv)
-        
+
         model.fit(X, y)
 
     else:  # standard train-test split for larger datasets
@@ -199,24 +191,20 @@ def train_model(df: pd.DataFrame, target: str, model_type: str, session_id: str)
         y_true = y_test
         y_pred = model.predict(X_test)
 
-    results = {
-            'Model type': model_type,
-            'Target variable': target,
-            'Feature names': ", ".join(X.columns)
-    }
+    results = {"Model type": model_type, "Target variable": target, "Feature names": ", ".join(X.columns)}
 
-    if task == 'regr':
-        results['R2'] = round(r2_score(y_true, y_pred), 3)
-        results['MSE'] = round(mean_squared_error(y_true, y_pred), 3)
-        results['RMSE'] = round(root_mean_squared_error(y_true, y_pred), 3)
+    if task == "regr":
+        results["R2"] = round(r2_score(y_true, y_pred), 3)
+        results["MSE"] = round(mean_squared_error(y_true, y_pred), 3)
+        results["RMSE"] = round(root_mean_squared_error(y_true, y_pred), 3)
     else:
-        results['Accuracy'] = round(accuracy_score(y_true, y_pred), 3)
-        results['Precision'] = round(precision_score(y_true, y_pred, average='weighted', zero_division=0), 3)
-        results['Recall'] = round(recall_score(y_true, y_pred, average='weighted', zero_division=0), 3)
-        results['F1'] = round(f1_score(y_true, y_pred, average='weighted', zero_division=0), 3)
+        results["Accuracy"] = round(accuracy_score(y_true, y_pred), 3)
+        results["Precision"] = round(precision_score(y_true, y_pred, average="weighted", zero_division=0), 3)
+        results["Recall"] = round(recall_score(y_true, y_pred, average="weighted", zero_division=0), 3)
+        results["F1"] = round(f1_score(y_true, y_pred, average="weighted", zero_division=0), 3)
 
     path = session_path(session_id, "model.onnx")
-    initial_type = [('float_input', FloatTensorType([None, len(X.columns)]))]
+    initial_type = [("float_input", FloatTensorType([None, len(X.columns)]))]
     onnx_model = to_onnx(model, initial_types=initial_type)
     with open(path, "wb") as f:
         f.write(onnx_model.SerializeToString())
@@ -229,12 +217,12 @@ def train_model(df: pd.DataFrame, target: str, model_type: str, session_id: str)
     for col in dfx.columns:
         dtype = dfx[col].dtype
         if pd.api.types.is_numeric_dtype(dtype):
-            input_info.append({"name": col, "type": 'number'})
+            input_info.append({"name": col, "type": "number"})
         elif pd.api.types.is_bool_dtype(dtype):
-            input_info.append({"name": col, "type": 'bool'})
+            input_info.append({"name": col, "type": "bool"})
         else:
             categories = dfx[col].dropna().unique().tolist()
-            input_info.append({'name': col, 'type': 'text', 'choices': categories})
+            input_info.append({"name": col, "type": "text", "choices": categories})
 
     return results, input_info, collector.warnings
 
@@ -244,25 +232,26 @@ def validate_test_data(dfx: pd.DataFrame, input_data: dict):
         dtype = dfx[col].dtype
 
         if val is None or str(val).strip() == "":
-            raise ValueError(f"Please insert a value for column '{col}'") 
+            raise ValueError(f"Please insert a value for column '{col}'")
         elif pd.api.types.is_numeric_dtype(dtype):
             try:
                 float(val)
             except ValueError:
                 raise ValueError(f"Invalid value for column '{col}': {val}. Expected a numeric value.")
         elif pd.api.types.is_bool_dtype(dtype):
-            if str(val).lower() not in ['true', 'false', '1', '0']:
+            if str(val).lower() not in ["true", "false", "1", "0"]:
                 raise ValueError(f"Invalid value for column '{col}': {val}. Expected a boolean value (True/False).")
         elif is_cat(dfx[col]):
             if val not in dfx[col].unique():
                 raise ValueError(f"Invalid value for column '{col}': {val}")
 
-def test_model(dfx: pd.DataFrame, model, input_data: dict, session_id: str, classes: list=None):
+
+def test_model(dfx: pd.DataFrame, model, input_data: dict, session_id: str, classes: list = None):
     for col in dfx.columns:
         if pd.api.types.is_bool_dtype(dfx[col].dtype):
-            input_data[col] = input_data[col].lower() in ('true', '1')
+            input_data[col] = input_data[col].lower() in ("true", "1")
     input_series = pd.Series(input_data)
-    
+
     X = input_series.to_frame().T
 
     X = X.astype(dfx.dtypes.to_dict())
@@ -274,16 +263,16 @@ def test_model(dfx: pd.DataFrame, model, input_data: dict, session_id: str, clas
         if col not in X.columns:
             X[col] = 0
 
-    X = X[columns].astype('float32')
+    X = X[columns].astype("float32")
     input_name = model.get_inputs()[0].name
     y_pred = model.run(None, {input_name: X.values})[0]
     feature_names = list(dfx.columns)
     row_list = list(input_data.values())
-   
-    if len(model.get_outputs()) > 1:          
+
+    if len(model.get_outputs()) > 1:
         label = int(np.asarray(y_pred).reshape(-1)[0])
-        y_pred2 = classes[label]             
-    else:                             
+        y_pred2 = classes[label]
+    else:
         y_pred2 = round(float(np.asarray(y_pred).reshape(-1)[0]), 3)
 
     return y_pred2, row_list, feature_names
