@@ -5,6 +5,22 @@ from pathlib import Path
 import pytest
 
 
+def test_serve_file_without_cookie(client):
+    response = client.get("/temp/00000000-0000-0000-0000-000000000000/test.png")
+    assert response.status_code == 403
+
+
+def test_serve_file_wrong_token(client):
+    client.set_cookie("session_token", "tokensbagliato")
+    response = client.get("/temp/00000000-0000-0000-0000-000000000000/test.png")
+    assert response.status_code == 403
+
+
+def test_download_without_cookie(client):
+    response = client.get("/download?session_id=00000000-0000-0000-0000-000000000000&file=model")
+    assert response.status_code == 403
+
+
 def test_no_file(client):
     response = client.post("/analyze", data={})
     assert b"No file submitted" in response.data

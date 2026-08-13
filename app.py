@@ -5,12 +5,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
-from flask import Flask, abort, render_template, request, send_file
+from flask import Flask, abort, g, render_template, request, send_file
 
 from modules.analysis import analyze_csv, read_csv_sep
 from modules.explainability import explain_global, explain_local
 from modules.modeling import DatasetValidationError, test_model, train_model, validate_test_data
-from services.session import get_session_dir, init_cleanup, load_dataframe, load_model, session_path, validate_session_id
+from services.session import get_session_dir, init_cleanup, load_dataframe, load_model, make_session_token, session_path, validate_session_id, verify_session_token
 from variables import TEMP_DIR
 
 load_dotenv(override=True)
@@ -40,13 +40,17 @@ def forbidden(e):
     return render_template("error.html", error="Forbidden", code=403), 403
 
 
-# prevent caching
 @app.after_request
 def after_request(response):
     """Ensure responses aren't cached"""
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Expires"] = 0
     response.headers["Pragma"] = "no-cache"
+
+    session_id = g.get("new_session_id")
+    secure = os.environ.get("APP_ENV", "").strip().lower() in ("production", "prod")
+    if session_id:
+        response.set_cookie("session_token", make_session_token(session_id), httponly=True, samesite="Lax", secure=secure)
     return response
 
 
@@ -76,6 +80,7 @@ def analyze():
             except Exception as e:
                 return render_template("analysis.html", error=f"Error occurred while analyzing the dataset: {str(e)}")
 
+            g.new_session_id = session_id
             return render_template("analysis.html", results=results, session_id=session_id)
         else:
             return render_template("analysis.html")
@@ -114,6 +119,7 @@ def model():
                 df.to_csv(path, index=False)
 
                 columns = df.columns.to_list()
+                g.new_session_id = session_id
                 return render_template("modeling.html", columns=columns, session_id=session_id)
 
             # second submit
@@ -223,6 +229,7 @@ def explain():
             except Exception as e:
                 return render_template("explainability.html", error=f"Error generating global explanation: {str(e)}")
 
+            g.new_session_id = session_id
             return render_template("explainability.html", summary_plot=summary_plot, session_id=session_id)
 
         elif form_type == "local_form":
@@ -274,6 +281,10 @@ def download():
     except ValueError:
         abort(403)
 
+    token = request.cookies.get("session_token")
+    if not verify_session_token(session_id, token):
+        abort(403)
+
     file = request.args.get("file")
 
     if file == "model":
@@ -295,6 +306,10 @@ def serve_file(session_id, filename):
     try:
         session_id = validate_session_id(session_id)
     except ValueError:
+        abort(403)
+
+    token = request.cookies.get("session_token")
+    if not verify_session_token(session_id, token):
         abort(403)
 
     # path traversal guard

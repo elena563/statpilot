@@ -12,6 +12,7 @@ from app import app
 @pytest.fixture
 def client():
     app.config["TESTING"] = True
+    os.environ.setdefault("SECRET_KEY", "test-secret-key")
     with app.test_client() as client:
         yield client
 

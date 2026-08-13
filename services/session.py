@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 import os
 import re
 import shutil
@@ -31,6 +33,18 @@ def validate_session_id(session_id: str | None) -> str:
 
 def session_path(session_id: str, filename: str) -> Path:
     return Path(TEMP_DIR) / session_id / filename
+
+
+def make_session_token(session_id: str) -> str:
+    secret = os.environ["SECRET_KEY"].encode()
+    return hmac.new(secret, session_id.encode(), hashlib.sha256).hexdigest()
+
+
+def verify_session_token(session_id: str, token: str | None) -> bool:
+    if not token:
+        return False
+    expected = make_session_token(session_id)
+    return hmac.compare_digest(expected, token)
 
 
 # loading logic
