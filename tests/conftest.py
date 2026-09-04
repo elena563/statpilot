@@ -1,6 +1,7 @@
 import os
 import sys
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -81,3 +82,9 @@ def unbalanced_df(base_df_54):
     df = base_df_54.copy()
     df["pet"] = ["cat"] * 52 + ["dog"] * 2
     return df
+
+
+@pytest.fixture
+def numeric_df_54():
+    rng = np.random.RandomState(42)
+    return pd.DataFrame(rng.rand(54, 3).astype("float32"), columns=["a", "b", "c"])

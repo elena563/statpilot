@@ -2,7 +2,6 @@ import json
 import os
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 from flask import Flask, abort, g, render_template, request, send_file
@@ -255,14 +254,14 @@ def explain():
             row = X_test.iloc[obs_index].values.reshape(1, -1).astype("float32")
             input_name = model.get_inputs()[0].name
 
-            y_pred = model.run(None, {input_name: row})[0]
+            y_pred_outputs = model.run(None, {input_name: row})
             if len(model.get_outputs()) > 1:
-                y_pred2 = int(np.asarray(y_pred).reshape(-1)[0])
+                y_pred2 = str(y_pred_outputs[0].flatten()[0])  # categorical
             else:
-                y_pred2 = round(float(np.asarray(y_pred).reshape(-1)[0]), 3)
+                y_pred2 = round(float(y_pred_outputs[0].flatten()[0]), 3)  # regression
 
             feature_names = list(X_test.columns)
-            row_list = row.flatten().tolist()
+            row_list = [round(float(v), 3) for v in row.flatten()]
 
             try:
                 plots = explain_local(obs_index, model, X_test, session_id)
