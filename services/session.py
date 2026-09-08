@@ -96,7 +96,11 @@ def _cleanup_loop(interval_hours=CLEANUP_INTERVAL_HOURS):
 
 
 def init_cleanup():
-    Path(TEMP_DIR).mkdir(parents=True, exist_ok=True)
+    try:
+        Path(TEMP_DIR).mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return
+
     cleanup_temp_dirs()
 
     t = threading.Thread(target=_cleanup_loop)
