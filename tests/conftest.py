@@ -1,5 +1,9 @@
 import os
 import sys
+import tempfile
+
+os.environ.setdefault("STATPILOT_TEMP_DIR", tempfile.mkdtemp())
+os.environ.setdefault("SECRET_KEY", "test-secret-key")
 
 import numpy as np
 import pandas as pd
