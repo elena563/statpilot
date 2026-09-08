@@ -18,6 +18,8 @@ app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 debug = os.environ.get("DEBUG", "").strip().lower() in ("1", "true", "yes", "on")
 
+init_cleanup()
+
 
 @app.errorhandler(404)
 def not_found(e):
@@ -329,7 +331,5 @@ def learn():
 
 
 if __name__ == "__main__":
-    init_cleanup()
-
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=debug, use_reloader=True)
